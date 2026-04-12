@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/nico-mayer/huectl-cli/internal/model"
+	"github.com/nico-mayer/themectl-cli/internal/model"
 )
 
 func SetSystemTheme(themeInfo model.ThemeInfo) error {

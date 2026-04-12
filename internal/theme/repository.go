@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 
 	"github.com/charmbracelet/log"
-	"github.com/nico-mayer/huectl-cli/internal/config"
-	"github.com/nico-mayer/huectl-cli/internal/fs"
-	"github.com/nico-mayer/huectl-cli/internal/model"
+	"github.com/nico-mayer/themectl-cli/internal/config"
+	"github.com/nico-mayer/themectl-cli/internal/fs"
+	"github.com/nico-mayer/themectl-cli/internal/model"
 )
 
 func loadInfo(name string) (model.ThemeInfo, error) {

@@ -8,17 +8,20 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/nico-mayer/huectl-cli/internal/config"
-	"github.com/nico-mayer/huectl-cli/internal/model"
-	"github.com/nico-mayer/huectl-cli/internal/random"
+	"github.com/nico-mayer/themectl-cli/internal/config"
+	"github.com/nico-mayer/themectl-cli/internal/model"
+	"github.com/nico-mayer/themectl-cli/internal/random"
 	"github.com/reujab/wallpaper"
 )
 
 func SetWallpaper(themeInfo model.ThemeInfo) error {
-
 	if len(themeInfo.WallpaperSources) == 0 {
 		log.Info("no wallpaper sources configured")
 		return nil
+	}
+	currWallpaper, err := wallpaper.Get()
+	if err != nil {
+		log.Warn("no current wallpaper found")
 	}
 
 	supportedFileTypes := []string{"png", "jpeg", "jpg", "heic"}
@@ -60,6 +63,15 @@ func SetWallpaper(themeInfo model.ThemeInfo) error {
 	}
 
 	selectedWallpaper := random.Element(validWallpaperPaths)
+
+	for {
+		if selectedWallpaper != currWallpaper || len(validWallpaperPaths) <= 1 {
+			break
+		}
+		log.Info("reselect wallpaper because it is already set")
+		selectedWallpaper = random.Element(validWallpaperPaths)
+	}
+
 	log.Info("setting wallpaper", "selected", selectedWallpaper, "candidates", len(validWallpaperPaths))
 
 	if err := wallpaper.SetFromFile(selectedWallpaper); err != nil {

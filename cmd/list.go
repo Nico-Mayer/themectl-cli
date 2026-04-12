@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/log"
-	"github.com/nico-mayer/huectl-cli/internal/theme"
+	"github.com/nico-mayer/themectl-cli/internal/theme"
 	"github.com/urfave/cli/v3"
 )
 
