@@ -1,6 +1,7 @@
 package theme
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -13,13 +14,9 @@ import (
 	"github.com/nico-mayer/themectl-cli/internal/model"
 )
 
-type task struct {
-	name string
-	run  func(themeInfo model.ThemeInfo) error
-}
-
 func ListAll() ([]string, error) {
-	themeDir := config.ThemeDir()
+	cfg, _ := config.Get()
+	themeDir := cfg.ThemesDir()
 	log.Debug("listing available themes", "theme_dir", themeDir)
 
 	var themes []string
@@ -58,11 +55,12 @@ func Set(themeName string) error {
 		return fmt.Errorf("copy theme %q to current directory: %w", themeName, err)
 	}
 
-	tasks := []task{
-		{name: "change zed theme", run: integrations.ChangeZedTheme},
-		{name: "change ghostty theme", run: integrations.ChangeGhosttyTheme},
-		{name: "set wallpaper", run: integrations.SetWallpaper},
-		{name: "set system theme", run: integrations.SetSystemTheme},
+	tasks := []integrations.Integration{
+		integrations.Zed{},
+		integrations.Ghostty{},
+		integrations.SystemTheme{},
+		integrations.Wallpaper{},
+		integrations.Yazi{},
 	}
 
 	var wg sync.WaitGroup
@@ -70,28 +68,27 @@ func Set(themeName string) error {
 
 	for _, t := range tasks {
 		wg.Add(1)
-		go func(t task) {
+		go func(t integrations.Integration) {
 			defer wg.Done()
 
-			err := t.run(themeInfo)
-			if err != nil {
-				errCh <- fmt.Errorf("%s: %w", t.name, err)
-				return
+			if err := t.Apply(themeInfo); err != nil {
+				errCh <- fmt.Errorf("%s: %w", t.Name(), err)
 			}
-
-			errCh <- nil
 		}(t)
 	}
 
-	go func() {
-		wg.Wait()
-		close(errCh)
-	}()
+	wg.Wait()
+	close(errCh)
 
+	var errs []error
 	for err := range errCh {
 		if err != nil {
-			return err
+			errs = append(errs, err)
 		}
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
 	}
 
 	return nil

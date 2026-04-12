@@ -4,37 +4,91 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/nico-mayer/themectl-cli/internal/config"
+	"github.com/nico-mayer/themectl-cli/internal/fs"
 	"github.com/nico-mayer/themectl-cli/internal/model"
 	"github.com/nico-mayer/themectl-cli/internal/random"
 	"github.com/reujab/wallpaper"
 )
 
-func SetWallpaper(themeInfo model.ThemeInfo) error {
-	if len(themeInfo.WallpaperSources) == 0 {
-		log.Info("no wallpaper sources configured")
-		return nil
+type Wallpaper struct{}
+
+func (Wallpaper) Name() string {
+	return "wallpaper"
+}
+
+func (i Wallpaper) Apply(themeInfo model.ThemeInfo) error {
+	cfg, _ := config.Get()
+	logger := integrationLogger(i)
+
+	sourceDirs := collectWallpaperSourceDirs(cfg, themeInfo, logger)
+	logger.Debug("collecting wallpaper candidates", "sources", len(sourceDirs))
+
+	candidates := collectWallpaperCandidates(sourceDirs, logger)
+	if len(candidates) == 0 {
+		return fmt.Errorf("failed to set wallpaper for theme %q: no supported wallpaper files found", themeInfo.Name)
 	}
-	currWallpaper, err := wallpaper.Get()
+
+	current, err := wallpaper.Get()
 	if err != nil {
-		log.Warn("no current wallpaper found")
+		logger.Warn("no current wallpaper found")
 	}
 
-	supportedFileTypes := []string{"png", "jpeg", "jpg", "heic"}
-	validWallpaperPaths := make([]string, 0)
+	selected := pickWallpaper(candidates, current, logger)
 
-	log.Debug("collecting wallpaper candidates", "sources", len(themeInfo.WallpaperSources))
+	logger.Info("setting wallpaper", "selected", selected, "candidates", len(candidates))
+	if err := wallpaper.SetFromFile(selected); err != nil {
+		return fmt.Errorf("failed to set wallpaper for theme %q from %q: %w", themeInfo.Name, selected, err)
+	}
+
+	logger.Info("wallpaper updated successfully", "selected", selected)
+	return nil
+}
+
+func collectWallpaperSourceDirs(cfg config.Config, themeInfo model.ThemeInfo, logger log.Logger) []string {
+	dirs := []string{
+		filepath.Join(cfg.ThemesDir(), themeInfo.Name, "wallpaper"),
+	}
 
 	for _, source := range themeInfo.WallpaperSources {
-		folderPath := filepath.Join(config.WallpaperDir(), source)
+		themePath := filepath.Join(cfg.ThemesDir(), source, "wallpaper")
+		exists := fs.Exists(themePath)
+		if fs.Exists(themePath) {
+			dirs = append(dirs, themePath)
+		} else {
+			logger.Debug("skipping wallpaper source: path does not exist or is not accessible", "path", themePath)
+		}
 
-		entries, err := os.ReadDir(folderPath)
+		sourcePath := filepath.Join(cfg.WallpaperSourcesDir(), source)
+		exists = fs.Exists(sourcePath)
+		if exists {
+			dirs = append(dirs, sourcePath)
+		} else {
+			logger.Debug("skipping wallpaper source: path does not exist or is not accessible", "path", sourcePath)
+		}
+	}
+
+	return dirs
+}
+
+func collectWallpaperCandidates(sourceDirs []string, logger log.Logger) []string {
+	supported := map[string]struct{}{
+		".png":  {},
+		".jpeg": {},
+		".jpg":  {},
+		".heic": {},
+	}
+
+	candidates := make([]string, 0)
+
+	for _, dir := range sourceDirs {
+		entries, err := os.ReadDir(dir)
+
 		if err != nil {
-			log.Warn("skipping wallpaper source", "source", source, "path", folderPath, "err", err)
+			logger.Warn("skipping wallpaper source", "path", dir, "err", err)
 			continue
 		}
 
@@ -43,42 +97,26 @@ func SetWallpaper(themeInfo model.ThemeInfo) error {
 				continue
 			}
 
-			wallpaperPath := filepath.Join(folderPath, entry.Name())
-			pathSubstring := strings.Split(wallpaperPath, ".")
-
-			var fileType string
-
-			if len(pathSubstring) > 0 {
-				fileType = strings.ToLower(pathSubstring[len(pathSubstring)-1])
-			}
-
-			if slices.Contains(supportedFileTypes, fileType) {
-				validWallpaperPaths = append(validWallpaperPaths, wallpaperPath)
+			path := filepath.Join(dir, entry.Name())
+			ext := strings.ToLower(filepath.Ext(entry.Name()))
+			if _, ok := supported[ext]; ok {
+				candidates = append(candidates, path)
 			}
 		}
 	}
 
-	if len(validWallpaperPaths) == 0 {
-		return fmt.Errorf("failed to set wallpaper for theme %q: no supported wallpaper files found", themeInfo.Name)
+	return candidates
+}
+
+func pickWallpaper(candidates []string, current string, logger log.Logger) string {
+	if len(candidates) == 1 {
+		return candidates[0]
 	}
 
-	selectedWallpaper := random.Element(validWallpaperPaths)
-
-	for {
-		if selectedWallpaper != currWallpaper || len(validWallpaperPaths) <= 1 {
-			break
-		}
-		log.Info("reselect wallpaper because it is already set")
-		selectedWallpaper = random.Element(validWallpaperPaths)
+	selected := random.Element(candidates)
+	for selected == current {
+		logger.Info("reselect wallpaper because it is already set")
+		selected = random.Element(candidates)
 	}
-
-	log.Info("setting wallpaper", "selected", selectedWallpaper, "candidates", len(validWallpaperPaths))
-
-	if err := wallpaper.SetFromFile(selectedWallpaper); err != nil {
-		return fmt.Errorf("failed to set wallpaper for theme %q from %q: %w", themeInfo.Name, selectedWallpaper, err)
-	}
-
-	log.Info("wallpaper updated successfully", "selected", selectedWallpaper)
-
-	return nil
+	return selected
 }

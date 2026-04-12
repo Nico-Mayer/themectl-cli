@@ -7,18 +7,24 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/charmbracelet/log"
 	"github.com/nico-mayer/themectl-cli/internal/model"
 )
 
-func ChangeGhosttyTheme(themeInfo model.ThemeInfo) error {
+type Ghostty struct{}
+
+func (Ghostty) Name() string {
+	return "ghostty"
+}
+
+func (i Ghostty) Apply(themeInfo model.ThemeInfo) error {
+	logger := integrationLogger(i)
 	ghosttyConfigPath := filepath.Join(os.Getenv("HOME"), ".config", "ghostty", "config.ghostty")
 
 	if len(themeInfo.GhosttyThemeName) == 0 {
 		themeInfo.GhosttyThemeName = themeInfo.Name
 	}
 
-	log.Debug("updating Ghostty theme",
+	logger.Debug("updating Ghostty theme",
 		"theme", themeInfo.Name,
 		"ghostty_theme", themeInfo.GhosttyThemeName,
 		"config_path", ghosttyConfigPath,
@@ -42,20 +48,20 @@ func ChangeGhosttyTheme(themeInfo model.ThemeInfo) error {
 		return fmt.Errorf("write Ghostty config %q: %w", ghosttyConfigPath, err)
 	}
 
-	log.Info("updated Ghostty theme",
+	logger.Info("updated Ghostty theme",
 		"theme", themeInfo.Name,
 		"ghostty_theme", themeInfo.GhosttyThemeName,
 	)
 
 	cmd := exec.Command("pkill", "-SIGUSR2", "ghostty")
 	if err := cmd.Run(); err != nil {
-		log.Warn("failed to signal Ghostty reload",
+		logger.Warn("failed to signal Ghostty reload",
 			"theme", themeInfo.Name,
 			"signal", "SIGUSR2",
 			"error", err,
 		)
 	} else {
-		log.Debug("signaled Ghostty to reload config",
+		logger.Debug("signaled Ghostty to reload config",
 			"theme", themeInfo.Name,
 			"signal", "SIGUSR2",
 		)

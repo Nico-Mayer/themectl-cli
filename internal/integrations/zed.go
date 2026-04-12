@@ -6,14 +6,20 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/charmbracelet/log"
 	"github.com/nico-mayer/themectl-cli/internal/model"
 )
 
-func ChangeZedTheme(themeInfo model.ThemeInfo) error {
+type Zed struct{}
+
+func (Zed) Name() string {
+	return "zed"
+}
+
+func (i Zed) Apply(themeInfo model.ThemeInfo) error {
+	logger := integrationLogger(i)
 	zedSettingsPath := filepath.Join(os.Getenv("HOME"), ".config", "zed", "settings.json")
 
-	log.Debug("updating Zed theme", "theme", themeInfo.Name, "path", zedSettingsPath)
+	logger.Debug("updating Zed theme", "theme", themeInfo.Name, "path", zedSettingsPath)
 
 	data, err := os.ReadFile(zedSettingsPath)
 	if err != nil {
@@ -33,7 +39,7 @@ func ChangeZedTheme(themeInfo model.ThemeInfo) error {
 		return fmt.Errorf("write updated Zed settings to %s: %w", zedSettingsPath, err)
 	}
 
-	log.Info("updated Zed theme", "theme", themeInfo.Name, "path", zedSettingsPath)
+	logger.Info("updated Zed theme", "theme", themeInfo.Name, "path", zedSettingsPath)
 
 	return nil
 }

@@ -13,7 +13,9 @@ import (
 )
 
 func loadInfo(name string) (model.ThemeInfo, error) {
-	infoFilePath := filepath.Join(config.ThemeDir(), name, "info.json")
+	cfg, _ := config.Get()
+
+	infoFilePath := filepath.Join(cfg.ThemesDir(), name, "info.json")
 
 	log.Debug("loading theme info", "theme", name, "path", infoFilePath)
 
@@ -35,10 +37,24 @@ func loadInfo(name string) (model.ThemeInfo, error) {
 }
 
 func copyToCurrent(themeName string) (model.ThemeInfo, error) {
-	srcDir := filepath.Join(config.ThemeDir(), themeName)
-	targetDir := filepath.Join(config.ThemeDir(), "_current")
+	cfg, _ := config.Get()
+
+	srcDir := filepath.Join(cfg.ThemesDir(), themeName)
+	targetDir := filepath.Join(cfg.ThemesDir(), "_current")
 
 	log.Info("copying theme files", "theme", themeName, "source", srcDir, "target", targetDir)
+
+	srcInfo, err := os.Stat(srcDir)
+	if err != nil {
+		return model.ThemeInfo{}, fmt.Errorf("stat theme directory %q: %w", srcDir, err)
+	}
+	if !srcInfo.IsDir() {
+		return model.ThemeInfo{}, fmt.Errorf("theme path %q is not a directory", srcDir)
+	}
+
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
+		return model.ThemeInfo{}, fmt.Errorf("create current theme directory %q: %w", targetDir, err)
+	}
 
 	entries, err := os.ReadDir(targetDir)
 	if err != nil {
@@ -52,21 +68,39 @@ func copyToCurrent(themeName string) (model.ThemeInfo, error) {
 		}
 	}
 
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
-		return model.ThemeInfo{}, fmt.Errorf("create current theme directory %q: %w", targetDir, err)
-	}
-
-	srcEntries, err := os.ReadDir(srcDir)
-	if err != nil {
-		return model.ThemeInfo{}, fmt.Errorf("read theme directory %q: %w", srcDir, err)
-	}
-	for _, entry := range srcEntries {
-		src := filepath.Join(srcDir, entry.Name())
-		dst := filepath.Join(targetDir, entry.Name())
-		log.Debug("copying theme file", "source", src, "target", dst)
-		if err := fs.CopyFile(src, dst); err != nil {
-			return model.ThemeInfo{}, fmt.Errorf("copy theme file %q to %q: %w", src, dst, err)
+	err = filepath.WalkDir(srcDir, func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
 		}
+
+		rel, err := filepath.Rel(srcDir, path)
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			return nil
+		}
+
+		dst := filepath.Join(targetDir, rel)
+
+		if d.IsDir() {
+			return os.MkdirAll(dst, 0o755)
+		}
+
+		// if d.Type()&os.ModeSymlink != 0 {
+		// 	log.Warn("skipping symlink while copying theme", "path", path)
+		// 	return nil
+		// }
+
+		log.Debug("copying theme file", "source", path, "target", dst)
+		if err := fs.CopyFile(path, dst); err != nil {
+			return fmt.Errorf("copy file %q to %q: %w", path, dst, err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return model.ThemeInfo{}, fmt.Errorf("copy theme directory %q to %q: %w", srcDir, targetDir, err)
 	}
 
 	themeInfo, err := Current()
@@ -75,6 +109,5 @@ func copyToCurrent(themeName string) (model.ThemeInfo, error) {
 	}
 
 	log.Info("theme files copied", "theme", themeInfo.Name, "appearance", themeInfo.Appearance)
-
 	return themeInfo, nil
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/nico-mayer/themectl-cli/cmd"
+	"github.com/nico-mayer/themectl-cli/internal/config"
 	"github.com/urfave/cli/v3"
 )
 
@@ -21,6 +22,12 @@ func main() {
 			if c.Bool("debug") {
 				log.SetLevel(log.DebugLevel)
 			}
+			log.SetReportTimestamp(false)
+			_, err := config.Get()
+			if err != nil {
+				return ctx, err
+			}
+
 			return ctx, nil
 		},
 		Commands: []*cli.Command{

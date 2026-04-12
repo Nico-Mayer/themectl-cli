@@ -30,7 +30,7 @@ func Wallpaper() *cli.Command {
 					return fmt.Errorf("get current theme: %w", err)
 				}
 
-				err = integrations.SetWallpaper(themeInfo)
+				err = integrations.Wallpaper{}.Apply(themeInfo)
 				if err != nil {
 					themeName := themeInfo.Name
 					log.Error("failed to set wallpaper", "theme", themeName, "err", err)
