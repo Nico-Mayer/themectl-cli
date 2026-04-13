@@ -51,6 +51,6 @@ func (i SystemTheme) setMacOSTheme(themeInfo model.ThemeInfo) error {
 		return fmt.Errorf("osascript failed: %w (output: %s)", err, strings.TrimSpace(string(output)))
 	}
 
-	logger.Info("theme applied", "appearance", mode)
+	logger.Info("applied", "appearance", mode)
 	return nil
 }

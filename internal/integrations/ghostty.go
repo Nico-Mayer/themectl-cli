@@ -50,7 +50,7 @@ func (i Ghostty) Apply(themeInfo model.ThemeInfo) error {
 		return fmt.Errorf("write Ghostty config %q: %w", ghosttyConfigPath, err)
 	}
 
-	logger.Info("theme applied", "ghostty_theme", ghosttyThemeOverride)
+	logger.Info("applied", "theme", ghosttyThemeOverride)
 
 	cmd := exec.Command("pkill", "-SIGUSR2", "ghostty")
 	if err := cmd.Run(); err != nil {

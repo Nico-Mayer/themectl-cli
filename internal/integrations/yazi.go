@@ -49,6 +49,6 @@ func (i Yazi) Apply(themeInfo model.ThemeInfo) error {
 		return fmt.Errorf("create yazi symlink %q -> %q: %w", linkPath, sourcePath, err)
 	}
 
-	logger.Info("theme applied")
+	logger.Info("applied", "theme", themeInfo.Name)
 	return nil
 }

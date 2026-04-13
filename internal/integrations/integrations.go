@@ -3,7 +3,6 @@ package integrations
 import (
 	"fmt"
 	"maps"
-	"os"
 	"slices"
 
 	"github.com/charmbracelet/log"
@@ -18,9 +17,8 @@ type Integration interface {
 }
 
 func integrationLogger(i Integration) log.Logger {
-	logger := log.New(os.Stderr)
-	logger.SetPrefix(fmt.Sprintf("< %s >", i.Name()))
-	return *logger
+	l := log.Default().WithPrefix(fmt.Sprintf("< %s >", i.Name()))
+	return *l
 }
 
 func All() []Integration {

@@ -16,7 +16,7 @@ func main() {
 		Name:  "themectl",
 		Usage: "my theme switcher cli stuffi",
 		Flags: []cli.Flag{
-			&cli.BoolFlag{Name: "debug", Aliases: []string{"d"}},
+			&cli.BoolFlag{Name: "verbose", Usage: "Prints more logs to stder", Aliases: []string{"v"}},
 		},
 		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
 			cfg, err := config.Get()
@@ -24,7 +24,7 @@ func main() {
 				return ctx, err
 			}
 
-			if c.Bool("debug") {
+			if c.Bool("verbose") {
 				log.SetLevel(log.DebugLevel)
 				log.Debug("loaded", "config", cfg)
 			}

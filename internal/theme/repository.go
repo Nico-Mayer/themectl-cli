@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 
 	"github.com/charmbracelet/log"
 	"github.com/nico-mayer/themectl-cli/internal/config"
@@ -34,6 +36,54 @@ func loadInfo(name string) (model.ThemeInfo, error) {
 	log.Debug("loaded theme info", "theme", themeInfo.Name, "appearance", themeInfo.Appearance)
 
 	return themeInfo, nil
+}
+
+func loadAllInfos() ([]model.ThemeInfo, error) {
+	cfg, _ := config.Get()
+
+	dir, err := os.ReadDir(cfg.ThemesDir)
+	if err != nil {
+		return []model.ThemeInfo{}, err
+	}
+
+	var filteredEntries []string
+	for _, d := range dir {
+		if d.IsDir() && !strings.HasPrefix(d.Name(), "_") {
+			filteredEntries = append(filteredEntries, d.Name())
+		}
+	}
+
+	var wg sync.WaitGroup
+	resultChan := make(chan model.ThemeInfo, len(filteredEntries))
+
+	for _, e := range filteredEntries {
+		wg.Add(1)
+		go func(themeName string) {
+			defer wg.Done()
+			info, err := loadInfo(themeName)
+			if err != nil {
+				log.Warn("skipping theme", "theme", themeName, "err", err)
+				return
+			}
+
+			resultChan <- info
+		}(e)
+	}
+
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	var themeInfos []model.ThemeInfo
+	for info := range resultChan {
+		themeInfos = append(themeInfos, info)
+	}
+
+	if len(themeInfos) == 0 {
+		return []model.ThemeInfo{}, fmt.Errorf("no theme could be loaded")
+	}
+	return themeInfos, nil
 }
 
 func copyToCurrent(themeName string) (model.ThemeInfo, error) {

@@ -51,6 +51,6 @@ func (i Eza) Apply(themeInfo model.ThemeInfo) error {
 		return fmt.Errorf("create eza symlink %q -> %q: %w", targetFilePath, srcPath, err)
 	}
 
-	logger.Info("theme applied")
+	logger.Info("applied", "theme", themeInfo.Name)
 	return nil
 }

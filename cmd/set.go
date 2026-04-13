@@ -18,31 +18,61 @@ func Set() *cli.Command {
 				Name: "theme",
 			},
 		},
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:    "random",
-				Aliases: []string{"r"},
+		Commands: []*cli.Command{
+			{
+				Name:  "random",
+				Usage: "sets a random theme",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "light",
+						Aliases: []string{"l"},
+						Usage:   "only use light themes",
+					},
+					&cli.BoolFlag{
+						Name:    "dark",
+						Aliases: []string{"d"},
+						Usage:   "only use dark themes",
+					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+					light := c.Bool("light")
+					dark := c.Bool("dark")
+
+					if light && dark {
+						return fmt.Errorf("cannot use --light and --dark together")
+					}
+
+					var appearance string
+					if light {
+						appearance = "light"
+					} else if dark {
+						appearance = "dark"
+					}
+
+					log.Info("setting random theme", "appearance", appearance)
+					themeInfo, err := theme.SetRandom(appearance)
+					if err != nil {
+						return err
+					}
+					fmt.Println(themeInfo.Name)
+					return nil
+				},
 			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
 			themeName := c.StringArg("theme")
-			randomTheme := c.Bool("random")
-
-			if randomTheme && len(themeName) > 0 {
-				return fmt.Errorf("cannot use --random with an explicit theme name")
-			}
-
-			if randomTheme {
-				log.Info("setting random theme")
-				return theme.SetRandom()
-			}
 
 			if len(themeName) == 0 {
 				return fmt.Errorf("no theme provided")
 			}
 
 			log.Info("setting", "theme", themeName)
-			return theme.Set(themeName)
+			themeInfo, err := theme.Set(themeName)
+			if err != nil {
+				return err
+			}
+			fmt.Println(themeInfo.Name)
+			return nil
 		},
 	}
 }

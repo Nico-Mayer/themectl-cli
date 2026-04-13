@@ -41,7 +41,7 @@ func (i Wallpaper) Apply(themeInfo model.ThemeInfo) error {
 		return fmt.Errorf("set wallpaper from %q: %w", selected, err)
 	}
 
-	logger.Info("theme applied", "wallpaper", selected)
+	logger.Info("set", "wallpaper", selected)
 	return nil
 }
 

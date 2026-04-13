@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 
 	"github.com/BurntSushi/toml"
-	"github.com/charmbracelet/log"
+	billyiofs "github.com/go-git/go-billy/v5/helper/iofs"
+	"github.com/go-git/go-billy/v5/memfs"
+	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/nico-mayer/themectl-cli/internal/config"
 	"github.com/nico-mayer/themectl-cli/internal/model"
-	"gopkg.in/src-d/go-billy.v4"
-	"gopkg.in/src-d/go-billy.v4/memfs"
-	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/storage/memory"
 )
 
 type Zed struct{}
@@ -51,8 +51,8 @@ func (i Zed) Apply(themeInfo model.ThemeInfo) error {
 		return err
 	}
 
-	err = cloneExtension(zedThemeInfo)
-	if err != nil {
+	logger.Debug("ensuring extension", "url", zedThemeInfo.ExtensionUrl)
+	if err := i.ensureExtension(zedThemeInfo); err != nil {
 		return err
 	}
 
@@ -60,46 +60,40 @@ func (i Zed) Apply(themeInfo model.ThemeInfo) error {
 
 	data, err := os.ReadFile(zedSettingsPath)
 	if err != nil {
-		return fmt.Errorf("read Zed settings from %s: %w", zedSettingsPath, err)
+		return fmt.Errorf("read settings: %w", err)
 	}
 
-	content := string(data)
 	re := regexp.MustCompile(`("theme"\s*:\s*")([^"]*)(")`)
-	if !re.MatchString(content) {
-		return fmt.Errorf("update Zed theme in %s: could not find \"theme\" setting", zedSettingsPath)
+	if !re.MatchString(string(data)) {
+		return fmt.Errorf("no \"theme\" key found in %s", zedSettingsPath)
 	}
 
-	updatedSettings := re.ReplaceAllString(content, `${1}`+zedThemeInfo.Theme+`${3}`)
-
-	err = os.WriteFile(zedSettingsPath, []byte(updatedSettings), 0644)
-	if err != nil {
-		return fmt.Errorf("write updated Zed settings to %s: %w", zedSettingsPath, err)
+	updated := re.ReplaceAllString(string(data), `${1}`+zedThemeInfo.Theme+`${3}`)
+	if err := os.WriteFile(zedSettingsPath, []byte(updated), 0644); err != nil {
+		return fmt.Errorf("write settings: %w", err)
 	}
 
-	logger.Info("theme applied")
-
+	logger.Info("theme applied", "theme", zedThemeInfo.Theme)
 	return nil
 }
 
 func loadZedThemeInfo() (ZedThemeInfo, error) {
 	cfg, _ := config.Get()
-	zedThemeFilePath := filepath.Join(cfg.Paths.CurrentThemeDir, "zed.json")
-
-	data, err := os.ReadFile(zedThemeFilePath)
+	data, err := os.ReadFile(filepath.Join(cfg.Paths.CurrentThemeDir, "zed.json"))
 	if err != nil {
-		return ZedThemeInfo{}, err
+		return ZedThemeInfo{}, fmt.Errorf("read zed theme info: %w", err)
 	}
 
-	var themeInfo ZedThemeInfo
-	err = json.Unmarshal(data, &themeInfo)
-	if err != nil {
-		return ZedThemeInfo{}, err
+	var info ZedThemeInfo
+	if err := json.Unmarshal(data, &info); err != nil {
+		return ZedThemeInfo{}, fmt.Errorf("parse zed theme info: %w", err)
 	}
-
-	return themeInfo, err
+	return info, nil
 }
 
-func cloneExtension(info ZedThemeInfo) error {
+func (i Zed) ensureExtension(info ZedThemeInfo) error {
+	logger := integrationLogger(i)
+
 	r, err := git.Clone(memory.NewStorage(), memfs.New(), &git.CloneOptions{
 		URL:   fmt.Sprintf("https://%s", info.ExtensionUrl),
 		Depth: 1,
@@ -110,43 +104,65 @@ func cloneExtension(info ZedThemeInfo) error {
 
 	wt, err := r.Worktree()
 	if err != nil {
-		return err
+		return fmt.Errorf("read worktree: %w", err)
 	}
 
-	f, err := wt.Filesystem.Open("extension.toml")
+	stdFs := billyiofs.New(wt.Filesystem)
+
+	manifest, err := parseManifest(stdFs)
 	if err != nil {
-		return fmt.Errorf("open extension.toml: %w", err)
-	}
-	defer f.Close()
-
-	var manifest ExtensionManifest
-	if _, err := toml.NewDecoder(f).Decode(&manifest); err != nil {
-		return fmt.Errorf("parse extension.toml: %w", err)
+		return err
 	}
 
 	userConfigDir, err := os.UserConfigDir()
 	if err != nil {
-		return err
+		return fmt.Errorf("resolve config dir: %w", err)
 	}
 
 	targetDir := filepath.Join(userConfigDir, "Zed", "extensions", "installed", manifest.ID)
 
 	if _, err := os.Stat(targetDir); err == nil {
-		log.Info("already installed", "extension", manifest.ID)
+		logger.Debug("already installed", "extension", manifest.ID)
 		return nil
 	}
 
-	if err := os.MkdirAll(targetDir, 0o755); err != nil {
-		return fmt.Errorf("create extension dir: %w", err)
+	logger.Debug("installing extension", "extension", manifest.ID, "target", targetDir)
+
+	if err := copyToDir(stdFs, targetDir); err != nil {
+		return fmt.Errorf("install extension: %w", err)
 	}
 
-	fs := wt.Filesystem
-	err = billyWalk(fs, "/", func(path string, isDir bool) error {
+	logger.Info("extension installed", "extension", manifest.ID)
+	return nil
+}
+
+func parseManifest(fsys fs.FS) (ExtensionManifest, error) {
+	f, err := fsys.Open("extension.toml")
+	if err != nil {
+		return ExtensionManifest{}, fmt.Errorf("open extension.toml: %w", err)
+	}
+	defer f.Close()
+
+	var manifest ExtensionManifest
+	if _, err := toml.NewDecoder(f).Decode(&manifest); err != nil {
+		return ExtensionManifest{}, fmt.Errorf("parse extension.toml: %w", err)
+	}
+	return manifest, nil
+}
+
+func copyToDir(srcFs fs.FS, targetDir string) error {
+	return fs.WalkDir(srcFs, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
 		dst := filepath.Join(targetDir, path)
-		if isDir {
+
+		if d.IsDir() {
 			return os.MkdirAll(dst, 0o755)
 		}
-		src, err := fs.Open(path)
+
+		src, err := srcFs.Open(path)
 		if err != nil {
 			return err
 		}
@@ -161,25 +177,4 @@ func cloneExtension(info ZedThemeInfo) error {
 		_, err = io.Copy(out, src)
 		return err
 	})
-
-	return err
-}
-
-func billyWalk(fs billy.Filesystem, root string, fn func(path string, isDir bool) error) error {
-	entries, err := fs.ReadDir(root)
-	if err != nil {
-		return err
-	}
-	for _, e := range entries {
-		p := filepath.Join(root, e.Name())
-		if err := fn(p, e.IsDir()); err != nil {
-			return err
-		}
-		if e.IsDir() {
-			if err := billyWalk(fs, p, fn); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

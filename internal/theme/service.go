@@ -39,22 +39,22 @@ func ListAll() ([]string, error) {
 	return themes, nil
 }
 
-func Set(themeName string) error {
+func Set(themeName string) (model.ThemeInfo, error) {
 	cfg, _ := config.Get()
 	themes, err := ListAll()
 	if err != nil {
-		return fmt.Errorf("list available themes: %w", err)
+		return model.ThemeInfo{}, fmt.Errorf("list available themes: %w", err)
 	}
 
 	valid := slices.Contains(themes, themeName)
 	if !valid {
-		return fmt.Errorf("theme %q is not available", themeName)
+		return model.ThemeInfo{}, fmt.Errorf("theme %q is not available", themeName)
 	}
 
 	log.Debug("copying theme into current directory", "theme", themeName)
 	themeInfo, err := copyToCurrent(themeName)
 	if err != nil {
-		return fmt.Errorf("copy theme %q to current directory: %w", themeName, err)
+		return model.ThemeInfo{}, fmt.Errorf("copy theme %q to current directory: %w", themeName, err)
 	}
 
 	tasks := slices.DeleteFunc(integrations.All(), func(i integrations.Integration) bool {
@@ -90,20 +90,16 @@ func Set(themeName string) error {
 	}
 
 	if len(errs) > 0 {
-		return errors.Join(errs...)
+		return model.ThemeInfo{}, errors.Join(errs...)
 	}
 
-	return nil
+	return themeInfo, nil
 }
 
-func SetRandom() error {
-	allThemes, err := ListAll()
+func SetRandom(appearance string) (model.ThemeInfo, error) {
+	allThemeInfos, err := loadAllInfos()
 	if err != nil {
-		return err
-	}
-
-	if len(allThemes) <= 0 {
-		return fmt.Errorf("no themes available")
+		return model.ThemeInfo{}, err
 	}
 
 	curentTheme, err := Current()
@@ -111,17 +107,23 @@ func SetRandom() error {
 		log.Warn("no current theme found")
 	}
 
-	filtered := slices.DeleteFunc(slices.Clone(allThemes), func(t string) bool {
-		return t == curentTheme.Name
+	filtered := slices.DeleteFunc(slices.Clone(allThemeInfos), func(info model.ThemeInfo) bool {
+		if info.Name == curentTheme.Name {
+			return true
+		}
+		if appearance != "" {
+			return !strings.EqualFold(info.Appearance, appearance)
+		}
+		return false
 	})
 
 	if len(filtered) == 0 {
-		return fmt.Errorf("no other themes available")
+		return model.ThemeInfo{}, fmt.Errorf("no matching themes available")
 	}
 
 	selectedTheme := random.Element(filtered)
 
-	return Set(selectedTheme)
+	return Set(selectedTheme.Name)
 }
 
 func Current() (model.ThemeInfo, error) {
