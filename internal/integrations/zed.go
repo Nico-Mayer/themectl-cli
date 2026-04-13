@@ -10,15 +10,23 @@ import (
 	"regexp"
 
 	"github.com/BurntSushi/toml"
+	"github.com/charmbracelet/log"
 	billyiofs "github.com/go-git/go-billy/v5/helper/iofs"
 	"github.com/go-git/go-billy/v5/memfs"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/nico-mayer/themectl-cli/internal/config"
 	"github.com/nico-mayer/themectl-cli/internal/model"
+	"github.com/nico-mayer/themectl-cli/internal/receipt"
 )
 
 type Zed struct{}
+
+type ZedReceipt struct {
+	Id           string `json:"id"`
+	Version      string `json:"version"`
+	ExtensionUrl string `json:"extension-url"`
+}
 
 type ZedThemeInfo struct {
 	ExtensionUrl string `json:"extension-url"`
@@ -51,9 +59,25 @@ func (i Zed) Apply(themeInfo model.ThemeInfo) error {
 		return err
 	}
 
-	logger.Debug("ensuring extension", "url", zedThemeInfo.ExtensionUrl)
-	if err := i.ensureExtension(zedThemeInfo); err != nil {
-		return err
+	hasReceipt := true
+	_, err = receipt.Load[ZedReceipt](i.Name(), themeInfo.Name)
+	if err != nil {
+		log.Warn(err)
+		hasReceipt = false
+	}
+
+	if !hasReceipt {
+		logger.Debug("download extension", "url", zedThemeInfo.ExtensionUrl)
+		extManifest, err := i.ensureExtension(zedThemeInfo)
+		if err != nil {
+			return err
+		}
+
+		receipt.Save(i.Name(), themeInfo.Name, ZedReceipt{
+			Id:           extManifest.ID,
+			Version:      extManifest.Version,
+			ExtensionUrl: extManifest.Repository,
+		})
 	}
 
 	zedSettingsPath := filepath.Join(os.Getenv("HOME"), ".config", "zed", "settings.json")
@@ -91,7 +115,7 @@ func loadZedThemeInfo() (ZedThemeInfo, error) {
 	return info, nil
 }
 
-func (i Zed) ensureExtension(info ZedThemeInfo) error {
+func (i Zed) ensureExtension(info ZedThemeInfo) (ExtensionManifest, error) {
 	logger := integrationLogger(i)
 
 	r, err := git.Clone(memory.NewStorage(), memfs.New(), &git.CloneOptions{
@@ -99,41 +123,45 @@ func (i Zed) ensureExtension(info ZedThemeInfo) error {
 		Depth: 1,
 	})
 	if err != nil {
-		return fmt.Errorf("clone extension: %w", err)
+		return ExtensionManifest{}, fmt.Errorf("clone extension: %w", err)
 	}
 
 	wt, err := r.Worktree()
 	if err != nil {
-		return fmt.Errorf("read worktree: %w", err)
+		return ExtensionManifest{}, fmt.Errorf("read worktree: %w", err)
 	}
 
 	stdFs := billyiofs.New(wt.Filesystem)
 
 	manifest, err := parseManifest(stdFs)
 	if err != nil {
-		return err
+		return ExtensionManifest{}, err
 	}
 
 	userConfigDir, err := os.UserConfigDir()
 	if err != nil {
-		return fmt.Errorf("resolve config dir: %w", err)
+		return ExtensionManifest{}, fmt.Errorf("resolve config dir: %w", err)
 	}
 
 	targetDir := filepath.Join(userConfigDir, "Zed", "extensions", "installed", manifest.ID)
 
 	if _, err := os.Stat(targetDir); err == nil {
 		logger.Debug("already installed", "extension", manifest.ID)
-		return nil
+		logger.Debug("clear", "dir", targetDir)
+		err = os.RemoveAll(targetDir)
+		if err != nil {
+			logger.Error("deleting", "dir", targetDir, "err", err)
+		}
 	}
 
 	logger.Debug("installing extension", "extension", manifest.ID, "target", targetDir)
 
 	if err := copyToDir(stdFs, targetDir); err != nil {
-		return fmt.Errorf("install extension: %w", err)
+		return ExtensionManifest{}, fmt.Errorf("install extension: %w", err)
 	}
 
 	logger.Info("extension installed", "extension", manifest.ID)
-	return nil
+	return manifest, nil
 }
 
 func parseManifest(fsys fs.FS) (ExtensionManifest, error) {

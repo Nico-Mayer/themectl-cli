@@ -7,6 +7,7 @@ type Paths struct {
 	ThemesDir           string
 	CurrentThemeDir     string
 	WallpaperSourcesDir string
+	ReceiptsDir         string
 	SettingsPath        string
 }
 
@@ -16,6 +17,7 @@ func NewPaths(configDir string) Paths {
 		ThemesDir:           filepath.Join(configDir, "themes"),
 		CurrentThemeDir:     filepath.Join(configDir, "themes", "_current"),
 		WallpaperSourcesDir: filepath.Join(configDir, "wallpaper-sources"),
+		ReceiptsDir:         filepath.Join(configDir, "receips"),
 		SettingsPath:        filepath.Join(configDir, "themectl.json"),
 	}
 }
