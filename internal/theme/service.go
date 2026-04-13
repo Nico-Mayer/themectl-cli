@@ -12,6 +12,7 @@ import (
 	"github.com/nico-mayer/themectl-cli/internal/config"
 	"github.com/nico-mayer/themectl-cli/internal/integrations"
 	"github.com/nico-mayer/themectl-cli/internal/model"
+	"github.com/nico-mayer/themectl-cli/internal/random"
 )
 
 func ListAll() ([]string, error) {
@@ -93,6 +94,34 @@ func Set(themeName string) error {
 	}
 
 	return nil
+}
+
+func SetRandom() error {
+	allThemes, err := ListAll()
+	if err != nil {
+		return err
+	}
+
+	if len(allThemes) <= 0 {
+		return fmt.Errorf("no themes available")
+	}
+
+	curentTheme, err := Current()
+	if err != nil {
+		log.Warn("no current theme found")
+	}
+
+	filtered := slices.DeleteFunc(slices.Clone(allThemes), func(t string) bool {
+		return t == curentTheme.Name
+	})
+
+	if len(filtered) == 0 {
+		return fmt.Errorf("no other themes available")
+	}
+
+	selectedTheme := random.Element(filtered)
+
+	return Set(selectedTheme)
 }
 
 func Current() (model.ThemeInfo, error) {

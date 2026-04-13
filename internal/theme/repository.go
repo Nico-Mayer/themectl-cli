@@ -42,7 +42,7 @@ func copyToCurrent(themeName string) (model.ThemeInfo, error) {
 	srcDir := filepath.Join(cfg.ThemesDir(), themeName)
 	targetDir := filepath.Join(cfg.ThemesDir(), "_current")
 
-	log.Info("copying theme files", "theme", themeName, "source", srcDir, "target", targetDir)
+	log.Debug("copying theme files", "theme", themeName, "source", srcDir, "target", targetDir)
 
 	srcInfo, err := os.Stat(srcDir)
 	if err != nil {

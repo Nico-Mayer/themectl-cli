@@ -15,22 +15,34 @@ func Set() *cli.Command {
 		Usage: "sets the specified theme",
 		Arguments: []cli.Argument{
 			&cli.StringArg{
-				Name:  "Theme",
-				Value: "tokyo-night-storm",
+				Name: "theme",
+			},
+		},
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "random",
+				Aliases: []string{"r"},
 			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
-			themeName := c.StringArg("Theme")
+			themeName := c.StringArg("theme")
+			randomTheme := c.Bool("random")
 
-			log.Info("setting theme", "theme", themeName)
-
-			if err := theme.Set(themeName); err != nil {
-				log.Error("failed to set theme", "theme", themeName, "err", err)
-				return fmt.Errorf("set theme %q: %w", themeName, err)
+			if randomTheme && len(themeName) > 0 {
+				return fmt.Errorf("cannot use --random with an explicit theme name")
 			}
 
-			log.Info("theme set successfully", "theme", themeName)
-			return nil
+			if randomTheme {
+				log.Info("setting random theme")
+				return theme.SetRandom()
+			}
+
+			if len(themeName) == 0 {
+				return fmt.Errorf("no theme provided")
+			}
+
+			log.Info("setting", "theme", themeName)
+			return theme.Set(themeName)
 		},
 	}
 }

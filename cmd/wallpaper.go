@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/nico-mayer/themectl-cli/internal/integrations"
 	"github.com/nico-mayer/themectl-cli/internal/theme"
+	"github.com/reujab/wallpaper"
 	"github.com/urfave/cli/v3"
 )
 
@@ -36,7 +37,14 @@ func Wallpaper() *cli.Command {
 					log.Error("failed to set wallpaper", "theme", themeName, "err", err)
 					return fmt.Errorf("set wallpaper %q: %w", themeName, err)
 				}
+				return nil
 			}
+
+			currentWall, err := wallpaper.Get()
+			if err != nil {
+				return err
+			}
+			fmt.Println(currentWall)
 
 			return nil
 		},
