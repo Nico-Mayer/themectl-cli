@@ -61,11 +61,12 @@ func Set(themeName string) error {
 		integrations.SystemTheme{},
 		integrations.Wallpaper{},
 		integrations.Yazi{},
+		integrations.Eza{},
 	}
 
 	var wg sync.WaitGroup
 	errCh := make(chan error, len(tasks))
-
+	log.Info("start integrations...")
 	for _, t := range tasks {
 		wg.Add(1)
 		go func(t integrations.Integration) {

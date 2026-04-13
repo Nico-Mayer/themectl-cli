@@ -19,7 +19,7 @@ func (i Zed) Apply(themeInfo model.ThemeInfo) error {
 	logger := integrationLogger(i)
 	zedSettingsPath := filepath.Join(os.Getenv("HOME"), ".config", "zed", "settings.json")
 
-	logger.Debug("updating Zed theme", "theme", themeInfo.Name, "path", zedSettingsPath)
+	logger.Debug("updating theme")
 
 	data, err := os.ReadFile(zedSettingsPath)
 	if err != nil {
@@ -39,7 +39,7 @@ func (i Zed) Apply(themeInfo model.ThemeInfo) error {
 		return fmt.Errorf("write updated Zed settings to %s: %w", zedSettingsPath, err)
 	}
 
-	logger.Info("updated Zed theme", "theme", themeInfo.Name, "path", zedSettingsPath)
+	logger.Info("theme applied")
 
 	return nil
 }

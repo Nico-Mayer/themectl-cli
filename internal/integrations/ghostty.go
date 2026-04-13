@@ -24,11 +24,7 @@ func (i Ghostty) Apply(themeInfo model.ThemeInfo) error {
 		themeInfo.GhosttyThemeName = themeInfo.Name
 	}
 
-	logger.Debug("updating Ghostty theme",
-		"theme", themeInfo.Name,
-		"ghostty_theme", themeInfo.GhosttyThemeName,
-		"config_path", ghosttyConfigPath,
-	)
+	logger.Debug("updating theme", "ghostty_theme", themeInfo.GhosttyThemeName)
 
 	data, err := os.ReadFile(ghosttyConfigPath)
 	if err != nil {
@@ -48,23 +44,11 @@ func (i Ghostty) Apply(themeInfo model.ThemeInfo) error {
 		return fmt.Errorf("write Ghostty config %q: %w", ghosttyConfigPath, err)
 	}
 
-	logger.Info("updated Ghostty theme",
-		"theme", themeInfo.Name,
-		"ghostty_theme", themeInfo.GhosttyThemeName,
-	)
+	logger.Info("theme applied", "ghostty_theme", themeInfo.GhosttyThemeName)
 
 	cmd := exec.Command("pkill", "-SIGUSR2", "ghostty")
 	if err := cmd.Run(); err != nil {
-		logger.Warn("failed to signal Ghostty reload",
-			"theme", themeInfo.Name,
-			"signal", "SIGUSR2",
-			"error", err,
-		)
-	} else {
-		logger.Debug("signaled Ghostty to reload config",
-			"theme", themeInfo.Name,
-			"signal", "SIGUSR2",
-		)
+		logger.Warn("reload signal failed", "err", err)
 	}
 
 	return nil

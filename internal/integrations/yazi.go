@@ -18,29 +18,33 @@ func (Yazi) Name() string {
 
 func (i Yazi) Apply(themeInfo model.ThemeInfo) error {
 	logger := integrationLogger(i)
-	userHomeDir, err := os.UserHomeDir()
 
+	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
-		return fmt.Errorf("unable to resolve user home dir: %w", err)
+		return fmt.Errorf("resolve user home dir: %w", err)
 	}
 
-	cfg, _ := config.Get()
-	yaziFlavorFilePath := filepath.Join(cfg.CurrentThemeDir(), "yazi-flavor.toml")
+	cfg, err := config.Get()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	sourcePath := filepath.Join(cfg.CurrentThemeDir(), "yazi-flavor.toml")
 	targetDir := filepath.Join(userHomeDir, ".config", "yazi", "flavors", "themectl.yazi")
 	linkPath := filepath.Join(targetDir, "flavor.toml")
 
-	err = os.MkdirAll(targetDir, 493)
-	if err != nil {
-		return err
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
+		return fmt.Errorf("create yazi flavor directory %q: %w", targetDir, err)
 	}
 
-	if err := os.Symlink(yaziFlavorFilePath, linkPath); err != nil {
+	if err := os.Symlink(sourcePath, linkPath); err != nil {
 		if errors.Is(err, os.ErrExist) {
-			logger.Debug("yazi flavor symlink already exists, skipping", "path", linkPath)
+			logger.Info("symlink exists, skipping")
 			return nil
 		}
-		return fmt.Errorf("create yazi symlink %q -> %q: %w", linkPath, yaziFlavorFilePath, err)
+		return fmt.Errorf("create yazi symlink %q -> %q: %w", linkPath, sourcePath, err)
 	}
 
+	logger.Info("theme applied")
 	return nil
 }
