@@ -51,8 +51,7 @@ func Set(themeName string) (model.ThemeInfo, error) {
 		return model.ThemeInfo{}, fmt.Errorf("theme %q is not available", themeName)
 	}
 
-	log.Debug("copying theme into current directory", "theme", themeName)
-	themeInfo, err := copyToCurrent(themeName)
+	themeInfo, err := symLinkToCurrent(themeName)
 	if err != nil {
 		return model.ThemeInfo{}, fmt.Errorf("copy theme %q to current directory: %w", themeName, err)
 	}
