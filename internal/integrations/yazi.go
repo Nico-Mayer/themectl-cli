@@ -12,6 +12,10 @@ import (
 
 type Yazi struct{}
 
+func init() {
+	Register(Yazi{})
+}
+
 func (Yazi) Name() string {
 	return "yazi"
 }
@@ -29,7 +33,7 @@ func (i Yazi) Apply(themeInfo model.ThemeInfo) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	sourcePath := filepath.Join(cfg.CurrentThemeDir(), "yazi-flavor.toml")
+	sourcePath := filepath.Join(cfg.Paths.CurrentThemeDir, "yazi-flavor.toml")
 	targetDir := filepath.Join(userHomeDir, ".config", "yazi", "flavors", "themectl.yazi")
 	linkPath := filepath.Join(targetDir, "flavor.toml")
 

@@ -19,14 +19,16 @@ func main() {
 			&cli.BoolFlag{Name: "debug", Aliases: []string{"d"}},
 		},
 		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
-			if c.Bool("debug") {
-				log.SetLevel(log.DebugLevel)
-			}
-			log.SetReportTimestamp(false)
-			_, err := config.Get()
+			cfg, err := config.Get()
 			if err != nil {
 				return ctx, err
 			}
+
+			if c.Bool("debug") {
+				log.SetLevel(log.DebugLevel)
+				log.Debug("loaded", "config", cfg)
+			}
+			log.SetReportTimestamp(false)
 
 			return ctx, nil
 		},

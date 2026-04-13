@@ -12,6 +12,10 @@ import (
 
 type Eza struct{}
 
+func init() {
+	Register(Eza{})
+}
+
 func (Eza) Name() string {
 	return "eza"
 }
@@ -29,7 +33,7 @@ func (i Eza) Apply(themeInfo model.ThemeInfo) error {
 		return fmt.Errorf("resolve user home dir: %w", err)
 	}
 
-	srcPath := filepath.Join(cfg.CurrentThemeDir(), "eza.yml")
+	srcPath := filepath.Join(cfg.Paths.CurrentThemeDir, "eza.yml")
 	targetDirPath := filepath.Join(userHomePath, ".config", "eza")
 	targetFilePath := filepath.Join(targetDirPath, "theme.yml")
 

@@ -15,6 +15,10 @@ import (
 
 type Wallpaper struct{}
 
+func init() {
+	Register(Wallpaper{})
+}
+
 func (Wallpaper) Name() string {
 	return "wallpaper"
 }
@@ -43,14 +47,14 @@ func (i Wallpaper) Apply(themeInfo model.ThemeInfo) error {
 
 func collectWallpaperSourceDirs(cfg config.Config, themeInfo model.ThemeInfo) []string {
 	dirs := []string{
-		filepath.Join(cfg.ThemesDir(), themeInfo.Name, "wallpaper"),
+		filepath.Join(cfg.Paths.ThemesDir, themeInfo.Name, "wallpaper"),
 	}
 
 	for _, source := range themeInfo.WallpaperSources {
-		if themePath := filepath.Join(cfg.ThemesDir(), source, "wallpaper"); fs.Exists(themePath) {
+		if themePath := filepath.Join(cfg.Paths.ThemesDir, source, "wallpaper"); fs.Exists(themePath) {
 			dirs = append(dirs, themePath)
 		}
-		if sourcePath := filepath.Join(cfg.WallpaperSourcesDir(), source); fs.Exists(sourcePath) {
+		if sourcePath := filepath.Join(cfg.Paths.WallpaperSourcesDir, source); fs.Exists(sourcePath) {
 			dirs = append(dirs, sourcePath)
 		}
 	}

@@ -15,7 +15,7 @@ import (
 func loadInfo(name string) (model.ThemeInfo, error) {
 	cfg, _ := config.Get()
 
-	infoFilePath := filepath.Join(cfg.ThemesDir(), name, "info.json")
+	infoFilePath := filepath.Join(cfg.Paths.ThemesDir, name, "info.json")
 
 	log.Debug("loading theme info", "theme", name, "path", infoFilePath)
 
@@ -39,8 +39,8 @@ func loadInfo(name string) (model.ThemeInfo, error) {
 func copyToCurrent(themeName string) (model.ThemeInfo, error) {
 	cfg, _ := config.Get()
 
-	srcDir := filepath.Join(cfg.ThemesDir(), themeName)
-	targetDir := filepath.Join(cfg.ThemesDir(), "_current")
+	srcDir := filepath.Join(cfg.Paths.ThemesDir, themeName)
+	targetDir := filepath.Join(cfg.Paths.ThemesDir, "_current")
 
 	log.Debug("copying theme files", "theme", themeName, "source", srcDir, "target", targetDir)
 

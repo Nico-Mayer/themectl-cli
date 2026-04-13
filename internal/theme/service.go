@@ -17,7 +17,7 @@ import (
 
 func ListAll() ([]string, error) {
 	cfg, _ := config.Get()
-	themeDir := cfg.ThemesDir()
+	themeDir := cfg.Paths.ThemesDir
 	log.Debug("listing available themes", "theme_dir", themeDir)
 
 	var themes []string
@@ -40,6 +40,7 @@ func ListAll() ([]string, error) {
 }
 
 func Set(themeName string) error {
+	cfg, _ := config.Get()
 	themes, err := ListAll()
 	if err != nil {
 		return fmt.Errorf("list available themes: %w", err)
@@ -56,14 +57,13 @@ func Set(themeName string) error {
 		return fmt.Errorf("copy theme %q to current directory: %w", themeName, err)
 	}
 
-	tasks := []integrations.Integration{
-		integrations.Zed{},
-		integrations.Ghostty{},
-		integrations.SystemTheme{},
-		integrations.Wallpaper{},
-		integrations.Yazi{},
-		integrations.Eza{},
-	}
+	tasks := slices.DeleteFunc(integrations.All(), func(i integrations.Integration) bool {
+		var shouldBeRemoved bool = !slices.Contains(cfg.Settings.Integrations, i.Name())
+		if !shouldBeRemoved {
+			log.Debug("loading", "integration", i.Name())
+		}
+		return shouldBeRemoved
+	})
 
 	var wg sync.WaitGroup
 	errCh := make(chan error, len(tasks))

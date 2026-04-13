@@ -11,6 +11,10 @@ import (
 
 type SystemTheme struct{}
 
+func init() {
+	Register(SystemTheme{})
+}
+
 func (SystemTheme) Name() string {
 	return "system-theme"
 }
