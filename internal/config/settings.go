@@ -14,7 +14,7 @@ type Settings struct {
 
 func DefaultSettings() Settings {
 	return Settings{
-		Integrations: []string{"ghostty", "zed", "system-theme", "wallpaper", "yazi", "eza"},
+		Integrations: []string{"ghostty", "zed", "system-theme", "wallpaper", "yazi", "eza", "nvim"},
 	}
 }
 
