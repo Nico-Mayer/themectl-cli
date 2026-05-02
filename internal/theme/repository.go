@@ -13,10 +13,15 @@ import (
 	"github.com/nico-mayer/themectl-cli/internal/model"
 )
 
-var themeCache map[string]model.ThemeInfo = make(map[string]model.ThemeInfo)
+var (
+	themeCache   = make(map[string]model.ThemeInfo)
+	themeCacheMu sync.RWMutex
+)
 
 func loadInfo(name string) (model.ThemeInfo, error) {
+	themeCacheMu.RLock()
 	themeInfo, ok := themeCache[name]
+	themeCacheMu.RUnlock()
 	if ok {
 		log.Debug("loaded from cache", "theme", themeInfo.Name)
 		return themeInfo, nil
@@ -39,7 +44,14 @@ func loadInfo(name string) (model.ThemeInfo, error) {
 	}
 
 	log.Debug("loaded theme info", "theme", themeInfo.Name, "appearance", themeInfo.Appearance)
+
+	themeCacheMu.Lock()
+	if cached, ok := themeCache[name]; ok {
+		themeCacheMu.Unlock()
+		return cached, nil
+	}
 	themeCache[name] = themeInfo
+	themeCacheMu.Unlock()
 
 	return themeInfo, nil
 }
