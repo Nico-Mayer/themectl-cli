@@ -5,16 +5,38 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 type Settings struct {
-	Integrations []string `json:"integrations"`
-	DefaultTheme string   `json:"default-theme,omitempty"`
+	Integrations []string          `json:"integrations"`
+	DefaultTheme string            `json:"default-theme,omitempty"`
+	ConfigPaths  map[string]string `json:"configpaths,omitempty"`
 }
 
 func DefaultSettings() Settings {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		userHome = os.Getenv("HOME")
+	}
+
 	return Settings{
-		Integrations: []string{"ghostty", "zed", "system-theme", "wallpaper", "yazi", "eza", "nvim"},
+		Integrations: []string{
+			"ghostty",
+			"zed",
+			"system-theme",
+			"wallpaper",
+			"yazi",
+			"eza",
+			"nvim",
+			"helix",
+		},
+		ConfigPaths: map[string]string{
+			"ghostty": filepath.Join(userHome, ".config", "ghostty", "config.ghostty"),
+			"zed":     filepath.Join(userHome, ".config", "zed", "settings.json"),
+			"helix":   filepath.Join(userHome, ".config", "helix", "config.toml"),
+		},
 	}
 }
 
@@ -35,4 +57,39 @@ func LoadSettings(path string) (Settings, error) {
 	}
 
 	return defaults, nil
+}
+
+func (s Settings) ConfigPathFor(integration string) string {
+	if s.ConfigPaths == nil {
+		return ""
+	}
+
+	path, ok := s.ConfigPaths[integration]
+	if !ok {
+		return ""
+	}
+
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return ""
+	}
+
+	path = os.ExpandEnv(path)
+
+	if path == "~" {
+		home, err := os.UserHomeDir()
+		if err == nil {
+			return home
+		}
+		return path
+	}
+
+	if strings.HasPrefix(path, "~/") {
+		home, err := os.UserHomeDir()
+		if err == nil {
+			return filepath.Join(home, strings.TrimPrefix(path, "~/"))
+		}
+	}
+
+	return path
 }

@@ -80,7 +80,15 @@ func (i Zed) Apply(themeInfo model.ThemeInfo) error {
 		})
 	}
 
-	zedSettingsPath := filepath.Join(os.Getenv("HOME"), ".config", "zed", "settings.json")
+	cfg, err := config.Get()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	zedSettingsPath := cfg.Settings.ConfigPathFor(i.Name())
+	if zedSettingsPath == "" {
+		zedSettingsPath = filepath.Join(os.Getenv("HOME"), ".config", "zed", "settings.json")
+	}
 
 	data, err := os.ReadFile(zedSettingsPath)
 	if err != nil {

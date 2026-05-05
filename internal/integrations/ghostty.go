@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/nico-mayer/themectl-cli/internal/config"
 	"github.com/nico-mayer/themectl-cli/internal/model"
 )
 
@@ -25,10 +26,18 @@ func (i Ghostty) Apply(themeInfo model.ThemeInfo) error {
 
 	ghosttyThemeOverride, ok := themeInfo.Overrides[i.Name()]
 	if !ok {
-		return fmt.Errorf("no ghostty theme override provided")
+		return fmt.Errorf("no ghostty theme override provided in theme %s", themeInfo.Name)
 	}
 
-	ghosttyConfigPath := filepath.Join(os.Getenv("HOME"), ".config", "ghostty", "config.ghostty")
+	cfg, err := config.Get()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	ghosttyConfigPath := cfg.Settings.ConfigPathFor(i.Name())
+	if ghosttyConfigPath == "" {
+		ghosttyConfigPath = filepath.Join(os.Getenv("HOME"), ".config", "ghostty", "config.ghostty")
+	}
 
 	logger.Debug("updating theme", "ghostty_theme", ghosttyThemeOverride)
 
