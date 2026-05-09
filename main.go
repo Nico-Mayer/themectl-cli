@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -26,7 +27,12 @@ func main() {
 
 			if c.Bool("verbose") {
 				log.SetLevel(log.DebugLevel)
-				log.Debug("loaded", "config", cfg)
+				b, err := json.MarshalIndent(cfg, "", "  ")
+				if err != nil {
+					return ctx, fmt.Errorf("failed to marshal config %v", err)
+				}
+
+				log.Debug("loaded", "config", string(b))
 			}
 			log.SetReportTimestamp(false)
 

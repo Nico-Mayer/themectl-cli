@@ -9,6 +9,10 @@ import (
 	"github.com/nico-mayer/themectl-cli/internal/config"
 )
 
+const (
+	filename = "receipt.json"
+)
+
 func Path(integrationName, themeName string) string {
 	cfg, _ := config.Get()
 	return filepath.Join(cfg.ReceiptsDir, integrationName, themeName)
@@ -16,7 +20,7 @@ func Path(integrationName, themeName string) string {
 
 func Load[T any](integrationName, themeName string) (T, error) {
 	var data T
-	target := filepath.Join(Path(integrationName, themeName), "receipt.json")
+	target := filepath.Join(Path(integrationName, themeName), filename)
 	bytes, err := os.ReadFile(target)
 	if err != nil {
 		return data, err
@@ -35,7 +39,7 @@ func Save[T any](integrationName, themeName string, data T) error {
 	byteData, err := json.Marshal(data)
 
 	log.Debug("write", "receipt", string(byteData))
-	err = os.WriteFile(filepath.Join(targetDir, "receipt.json"), byteData, 0o755)
+	err = os.WriteFile(filepath.Join(targetDir, filename), byteData, 0o755)
 	if err != nil {
 		return err
 	}
