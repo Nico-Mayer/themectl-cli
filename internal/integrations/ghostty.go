@@ -34,7 +34,7 @@ func (i Ghostty) Apply(themeInfo model.ThemeInfo) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	ghosttyConfigPath := cfg.Settings.ConfigPathFor(i.Name())
+	ghosttyConfigPath := cfg.ConfigPathFor(i.Name())
 	if ghosttyConfigPath == "" {
 		ghosttyConfigPath = filepath.Join(os.Getenv("HOME"), ".config", "ghostty", "config.ghostty")
 	}
@@ -61,7 +61,7 @@ func (i Ghostty) Apply(themeInfo model.ThemeInfo) error {
 
 	logger.Info("applied", "theme", ghosttyThemeOverride)
 
-	cmd := exec.Command("pkill", "-SIGUSR2", "ghostty")
+	cmd := exec.Command("pkill", "-USR2", "-f", "ghostty")
 	if err := cmd.Run(); err != nil {
 		logger.Warn("reload signal failed", "err", err)
 	}
