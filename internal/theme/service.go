@@ -57,7 +57,7 @@ func Set(themeName string) (model.ThemeInfo, error) {
 	}
 
 	tasks := slices.DeleteFunc(integrations.All(), func(i integrations.Integration) bool {
-		var shouldBeRemoved bool = !slices.Contains(cfg.Settings.Integrations, i.Name())
+		shouldBeRemoved := !slices.Contains(cfg.Settings.Integrations, i.Name())
 		if !shouldBeRemoved {
 			log.Debug("loading", "integration", i.Name())
 		}

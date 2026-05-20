@@ -11,7 +11,7 @@ func CopyFile(src, dst string) error {
 	if err != nil {
 		return fmt.Errorf("open source file %q: %w", src, err)
 	}
-	defer srcFile.Close()
+	defer deferClose(srcFile, &err)
 
 	srcInfo, err := srcFile.Stat()
 	if err != nil {
@@ -22,7 +22,7 @@ func CopyFile(src, dst string) error {
 	if err != nil {
 		return fmt.Errorf("open destination file %q: %w", dst, err)
 	}
-	defer dstFile.Close()
+	defer deferClose(dstFile, &err)
 
 	_, err = io.Copy(dstFile, srcFile)
 	if err != nil {
@@ -35,4 +35,10 @@ func CopyFile(src, dst string) error {
 func Exists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+func deferClose(file *os.File, errp *error) {
+	if cerr := file.Close(); cerr != nil && *errp == nil {
+		*errp = cerr
+	}
 }
