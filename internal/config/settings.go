@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -98,7 +99,11 @@ func (s Settings) ConfigPathFor(integration string) string {
 func zedConfigPath(userHome string) string {
 	platform := runtime.GOOS
 
-	configHome, _ := os.UserConfigDir()
+	configHome, err := os.UserConfigDir()
+	if err != nil {
+		log.Fatal("User Config dir not set")
+	}
+
 	if platform == "windows" {
 		return filepath.Join(configHome, "zed", "settings.json")
 	}
