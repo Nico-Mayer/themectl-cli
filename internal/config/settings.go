@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -34,7 +35,7 @@ func DefaultSettings() Settings {
 		},
 		ConfigPaths: map[string]string{
 			"ghostty": filepath.Join(userHome, ".config", "ghostty", "config.ghostty"),
-			"zed":     filepath.Join(userHome, ".config", "zed", "settings.json"),
+			"zed":     zedConfigPath(userHome),
 			"helix":   filepath.Join(userHome, ".config", "helix", "config.toml"),
 		},
 	}
@@ -92,4 +93,15 @@ func (s Settings) ConfigPathFor(integration string) string {
 	}
 
 	return path
+}
+
+func zedConfigPath(userHome string) string {
+	platform := runtime.GOOS
+
+	configHome, _ := os.UserConfigDir()
+	if platform == "windows" {
+		return filepath.Join(configHome, "zed", "settings.json")
+	}
+
+	return filepath.Join(userHome, ".config", "zed", "settings.json")
 }

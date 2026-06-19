@@ -1,6 +1,8 @@
 package config
 
-import "path/filepath"
+import (
+	"path/filepath"
+)
 
 type Paths struct {
 	ConfigDir           string

@@ -8,11 +8,14 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 
 	"github.com/BurntSushi/toml"
 	"github.com/charmbracelet/log"
+	"github.com/go-git/go-billy/v5"
 	billyiofs "github.com/go-git/go-billy/v5/helper/iofs"
 	"github.com/go-git/go-billy/v5/memfs"
+	"github.com/go-git/go-billy/v5/util"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/nico-mayer/themectl-cli/internal/config"
@@ -151,6 +154,10 @@ func (i Zed) ensureExtension(info ZedThemeInfo) (ExtensionManifest, error) {
 		return ExtensionManifest{}, fmt.Errorf("resolve config dir: %w", err)
 	}
 
+	if runtime.GOOS == "windows" {
+		userConfigDir = filepath.Join(filepath.Dir(userConfigDir), "Local")
+	}
+
 	targetDir := filepath.Join(userConfigDir, "Zed", "extensions", "installed", manifest.ID)
 
 	if _, err := os.Stat(targetDir); err == nil {
@@ -164,7 +171,7 @@ func (i Zed) ensureExtension(info ZedThemeInfo) (ExtensionManifest, error) {
 
 	logger.Debug("installing extension", "extension", manifest.ID, "target", targetDir)
 
-	if err := copyToDir(stdFs, targetDir); err != nil {
+	if err := copyToDir(wt.Filesystem, targetDir); err != nil {
 		return ExtensionManifest{}, fmt.Errorf("install extension: %w", err)
 	}
 
@@ -186,15 +193,15 @@ func parseManifest(fsys fs.FS) (ExtensionManifest, error) {
 	return manifest, nil
 }
 
-func copyToDir(srcFs fs.FS, targetDir string) error {
-	return fs.WalkDir(srcFs, ".", func(path string, d fs.DirEntry, err error) error {
+func copyToDir(srcFs billy.Filesystem, targetDir string) error {
+	return util.Walk(srcFs, ".", func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
 		dst := filepath.Join(targetDir, path)
 
-		if d.IsDir() {
+		if info.IsDir() {
 			return os.MkdirAll(dst, 0o755)
 		}
 
