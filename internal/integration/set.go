@@ -11,6 +11,9 @@ func Enabled(cfg config.Config) []Integration {
 		"ghostty": func() Integration {
 			return Ghostty{ConfigPath: filepath.Join(cfg.Settings.ConfigDirFor("ghostty"), "config.ghostty")}
 		},
+		"eza": func() Integration {
+			return Eza{}
+		},
 	}
 
 	var out []Integration

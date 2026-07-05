@@ -3,6 +3,7 @@ package integration
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"regexp"
 
 	"github.com/nico-mayer/themectl-cli/internal/theme"
@@ -45,5 +46,14 @@ func (g Ghostty) Apply(t theme.Resolved) error {
 		return fmt.Errorf("write ghostty config: %w", err)
 	}
 
+	if err = sendUpdateSignal(); err != nil {
+		sendUpdateSignal()
+	}
+
 	return nil
+}
+
+func sendUpdateSignal() error {
+	cmd := exec.Command("pkill", "-USR2", "-f", "ghostty")
+	return cmd.Run()
 }

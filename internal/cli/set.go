@@ -12,13 +12,18 @@ import (
 func setCmd(cfg config.Config, store *theme.Store, eng *engine.Engine) *cli.Command {
 	return &cli.Command{
 		Name: "set",
+		Arguments: []cli.Argument{
+			&cli.StringArg{
+				Name: "theme",
+			},
+		},
 		Action: func(ctx context.Context, c *cli.Command) error {
-			id := "nord/default"
-			res, err := store.Resolve(id)
+			themeName := c.StringArg("theme")
+			res, err := store.Resolve(themeName)
 			if err != nil {
 				return err
 			}
-			if err := store.Materialize(id, cfg.CurrentDir()); err != nil {
+			if err := store.Materialize(themeName, cfg.CurrentDir()); err != nil {
 				return err
 			}
 			if err := eng.Apply(res); err != nil {
