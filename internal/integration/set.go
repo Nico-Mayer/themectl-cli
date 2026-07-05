@@ -1,0 +1,23 @@
+package integration
+
+import (
+	"github.com/nico-mayer/themectl-cli/internal/config"
+)
+
+func Enabled(cfg config.Config) []Integration {
+	available := map[string]func() Integration{
+		"ghostty": func() Integration {
+			return Ghostty{ConfigPath: cfg.Settings.ConfigDirFor("ghostty") + "config.ghostty"}
+		},
+	}
+
+	var out []Integration
+	for _, name := range cfg.Settings.Integrations {
+		i, ok := available[name]
+		if ok {
+			out = append(out, i())
+		}
+	}
+
+	return out
+}
