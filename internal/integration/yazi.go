@@ -14,7 +14,7 @@ type Yazi struct {
 }
 
 func (Yazi) Name() string {
-	return "eza"
+	return "yazi"
 }
 
 func (i Yazi) Apply(t theme.Resolved) error {
