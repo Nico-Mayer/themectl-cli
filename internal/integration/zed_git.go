@@ -25,7 +25,7 @@ func (g gitInstaller) Ensure(ref ExtensionRef) error {
 	}
 
 	marker := g.markerPath(ref.URL)
-	if info, err := os.Stat(marker); err != nil && time.Since(info.ModTime()) < installCheckTTL {
+	if info, err := os.Stat(marker); err == nil && time.Since(info.ModTime()) < installCheckTTL {
 		return nil
 	}
 
