@@ -4,20 +4,15 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/nico-mayer/themectl-cli/internal/testutil"
 )
 
-func TestConfig(t *testing.T) {
+func TestLoad(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "themectl.toml"), []byte(`default-theme = "catppuccin-mocha"`), 0o744)
+	testutil.NoErr(t, os.WriteFile(filepath.Join(dir, "themectl.toml"), []byte(`default-theme = "catppuccin-mocha"`), 0o644))
 
 	c, err := Load(dir)
-	if err != nil {
-		t.Errorf("loading config %v", err)
-	}
-
-	wantTheme := "catppuccin-mocha"
-	got := c.Settings.DefaultTheme
-	if wantTheme != got {
-		t.Errorf("want: %v got:%v", wantTheme, got)
-	}
+	testutil.NoErr(t, err)
+	testutil.Equal(t, c.Settings.DefaultTheme, "catppuccin-mocha")
 }

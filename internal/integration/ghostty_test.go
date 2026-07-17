@@ -6,10 +6,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/nico-mayer/themectl-cli/internal/testutil"
 	"github.com/nico-mayer/themectl-cli/internal/theme"
 )
 
-func TestSetGhosttyTheme_pure(t *testing.T) {
+func TestSetGhosttyTheme(t *testing.T) {
 	tests := []struct {
 		name    string
 		in      string
@@ -17,44 +18,35 @@ func TestSetGhosttyTheme_pure(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{name: "Simple", in: "theme = old\nfont=mono\n", theme: "new", want: "theme = \"new\"\nfont=mono\n", wantErr: false},
-		{name: "Quoted spacing", in: `theme     =    "old"`, theme: "new", want: `theme     =    "new"`, wantErr: false},
-		{name: "missing", in: "font = mono\n", theme: "new", want: "", wantErr: true},
+		{name: "unquoted value", in: "theme = old\nfont=mono\n", theme: "new", want: "theme = \"new\"\nfont=mono\n"},
+		{name: "loose spacing", in: `theme     =    "old"`, theme: "new", want: `theme     =    "new"`},
+		{name: "missing theme key", in: "font = mono\n", theme: "new", wantErr: true},
 	}
 
 	for _, tt := range tests {
-		got, err := setGhosttyTheme(tt.in, tt.theme)
-		if (err != nil) != tt.wantErr {
-			t.Fatalf("%s: err = %v, wantErr %v", tt.name, err, tt.wantErr)
-		}
-		if !tt.wantErr && got != tt.want {
-			t.Errorf("%s: got %q, want %q", tt.name, got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := setGhosttyTheme(tt.in, tt.theme)
+			testutil.Equal(t, err != nil, tt.wantErr)
+			if !tt.wantErr {
+				testutil.Equal(t, got, tt.want)
+			}
+		})
 	}
 }
 
 func TestGhostty_Apply(t *testing.T) {
-	dir := t.TempDir()
-	cfgPath := filepath.Join(dir, "config.ghostty")
-	if err := os.WriteFile(cfgPath, []byte("theme = old"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(t.TempDir(), "config.ghostty")
+	testutil.NoErr(t, os.WriteFile(cfgPath, []byte("theme = old"), 0o644))
 
-	g := Ghostty{
-		ConfigPath: cfgPath,
-	}
-
+	g := Ghostty{ConfigPath: cfgPath}
 	res := theme.Resolved{
 		Family:  "catppuccin",
 		Variant: "mocha",
-		Themes: map[string]string{
-			"ghostty": "catppuccin-mocha",
-		},
+		Themes:  map[string]string{"ghostty": "catppuccin-mocha"},
 	}
 
-	if err := g.Apply(res); err != nil {
-		t.Fatal(err)
-	}
+	testutil.NoErr(t, g.Apply(res))
+
 	out, _ := os.ReadFile(cfgPath)
 	if !strings.Contains(string(out), `theme = "catppuccin-mocha"`) {
 		t.Errorf("config not rewritten: %q", out)

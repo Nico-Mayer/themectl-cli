@@ -6,10 +6,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/nico-mayer/themectl-cli/internal/testutil"
 	"github.com/nico-mayer/themectl-cli/internal/theme"
 )
 
-func TestSetHelixTheme_pure(t *testing.T) {
+func TestSetHelixTheme(t *testing.T) {
 	tests := []struct {
 		name    string
 		in      string
@@ -30,22 +31,17 @@ func TestSetHelixTheme_pure(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := setHelixTheme(tt.in, tt.theme)
-			if (err != nil) != tt.wantErr {
-				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !tt.wantErr && got != tt.want {
-				t.Errorf("got %q, want %q", got, tt.want)
+			testutil.Equal(t, err != nil, tt.wantErr)
+			if !tt.wantErr {
+				testutil.Equal(t, got, tt.want)
 			}
 		})
 	}
 }
 
 func TestHelix_Apply(t *testing.T) {
-	dir := t.TempDir()
-	cfgPath := filepath.Join(dir, "config.toml")
-	if err := os.WriteFile(cfgPath, []byte(`theme = "old"`), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(t.TempDir(), "config.toml")
+	testutil.NoErr(t, os.WriteFile(cfgPath, []byte(`theme = "old"`), 0o644))
 
 	h := Helix{ConfigPath: cfgPath}
 	res := theme.Resolved{
@@ -54,16 +50,15 @@ func TestHelix_Apply(t *testing.T) {
 		Themes:  map[string]string{"helix": "catppuccin_mocha"},
 	}
 
-	if err := h.Apply(res); err != nil {
-		t.Fatal(err)
-	}
+	testutil.NoErr(t, h.Apply(res))
+
 	out, _ := os.ReadFile(cfgPath)
 	if !strings.Contains(string(out), `theme = "catppuccin_mocha"`) {
 		t.Errorf("config not rewritten: %q", out)
 	}
 }
 
-func TestHelix_Apply_noOverride(t *testing.T) {
+func TestHelix_Apply_noOverrideFails(t *testing.T) {
 	h := Helix{ConfigPath: "unused"}
 	if err := h.Apply(theme.Resolved{Themes: map[string]string{}}); err == nil {
 		t.Error("expected error when theme has no helix override")

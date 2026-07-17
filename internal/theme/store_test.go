@@ -1,10 +1,12 @@
 package theme
 
 import (
-	"reflect"
+	"fmt"
 	"slices"
 	"testing"
 	"testing/fstest"
+
+	"github.com/nico-mayer/themectl-cli/internal/testutil"
 )
 
 func testFS() fstest.MapFS {
@@ -16,7 +18,6 @@ appearance = "dark"
 eza = "cat-eza"
 `)},
 		"catppuccin/mocha/variant.toml": {Data: []byte(`
-appearance = "dark"
 wallpaper_sources = ["catppuccin/latte", "nature"]
 [themes]
 ghostty = "catppuccin-mocha"
@@ -34,71 +35,69 @@ ghostty = "catppuccin-latte"
 func TestStore_Resolve(t *testing.T) {
 	s := NewStore(testFS())
 
-	got, err := s.Resolve("catppuccin/latte")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got.Appearance != Light {
-		t.Errorf("appearance = %q, want light", got.Appearance)
-	}
-	if got.Themes["ghostty"] != "catppuccin-latte" {
-		t.Errorf("ghostty = %q", got.Themes["ghostty"])
-	}
-	if got.Themes["eza"] != "cat-eza" {
-		t.Errorf("eza = %q, want inherited cat-eza", got.Themes["eza"])
-	}
-	if len(got.WallpaperSources) != 0 {
-		t.Errorf("latte wallpaper sources = %v, want none", got.WallpaperSources)
-	}
+	latte, err := s.Resolve("catppuccin/latte")
+	testutil.NoErr(t, err)
+	testutil.Equal(t, latte.Appearance, Light)
+	testutil.Equal(t, latte.Themes["ghostty"], "catppuccin-latte")
+	testutil.Equal(t, latte.Themes["eza"], "cat-eza")
+	testutil.Equal(t, len(latte.WallpaperSources), 0)
 
 	mocha, err := s.Resolve("catppuccin/mocha")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !reflect.DeepEqual(mocha.WallpaperSources, []string{"catppuccin/latte", "nature"}) {
-		t.Errorf("mocha wallpaper sources = %v", mocha.WallpaperSources)
+	testutil.NoErr(t, err)
+	testutil.Diff(t, []string{"catppuccin/latte", "nature"}, mocha.WallpaperSources)
+}
+
+func TestStore_Resolve_inheritsAppearanceFromFamily(t *testing.T) {
+	s := NewStore(testFS())
+
+	mocha, err := s.Resolve("catppuccin/mocha")
+	testutil.NoErr(t, err)
+	testutil.Equal(t, mocha.Appearance, Dark)
+
+	latte, err := s.Resolve("catppuccin/latte")
+	testutil.NoErr(t, err)
+	testutil.Equal(t, latte.Appearance, Light)
+}
+
+func TestStore_Resolve_badID(t *testing.T) {
+	s := NewStore(testFS())
+	if _, err := s.Resolve("nofamilyslash"); err == nil {
+		t.Error("expected error for id without a slash")
 	}
 }
 
-func TestStore_ListVariants(t *testing.T) {
+func TestStore_List(t *testing.T) {
 	s := NewStore(testFS())
 	got, err := s.List("catppuccin")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(got) != 2 {
-		t.Fatalf("want 2 variants, got %v", got)
-	}
+	testutil.NoErr(t, err)
+	testutil.Diff(t, []string{"latte", "mocha"}, got)
 }
 
-func TestStore_AssetPath_variantShadowsFamily(t *testing.T) {
+func TestStore_AssetPath(t *testing.T) {
 	s := NewStore(testFS())
 
 	tests := []struct {
 		name    string
-		family  string
 		variant string
 		asset   string
 		want    string
 		wantOk  bool
 	}{
-		{name: "variant has asset", family: "catppuccin", variant: "mocha", asset: "nvim.lua", want: "catppuccin/mocha/nvim.lua", wantOk: true},
-		{name: "variant inharits from family", family: "catppuccin", variant: "latte", asset: "nvim.lua", want: "catppuccin/nvim.lua", wantOk: true},
-		{name: "neither has asset", family: "catppuccin", variant: "latte", asset: "eza.yml", want: "", wantOk: false},
+		{name: "variant has asset", variant: "mocha", asset: "nvim.lua", want: "catppuccin/mocha/nvim.lua", wantOk: true},
+		{name: "variant inherits from family", variant: "latte", asset: "nvim.lua", want: "catppuccin/nvim.lua", wantOk: true},
+		{name: "neither has asset", variant: "latte", asset: "eza.yml", want: "", wantOk: false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, ok := s.AssetPath(tt.family, tt.variant, tt.asset)
-			if ok != tt.wantOk || p != tt.want {
-				t.Errorf("got: %v want: %v (got ok=%v, want ok;%v)", p, tt.want, ok, tt.wantOk)
-			}
+			got, ok := s.AssetPath("catppuccin", tt.variant, tt.asset)
+			testutil.Equal(t, got, tt.want)
+			testutil.Equal(t, ok, tt.wantOk)
 		})
 	}
 }
 
-func TestStore_Assets_overlay(t *testing.T) {
+func TestStore_Assets(t *testing.T) {
 	fsys := fstest.MapFS{
 		"catppuccin/family.toml":           {Data: []byte("[defaults]\nappearance='dark'\n")},
 		"catppuccin/zed.json":              {Data: []byte(`{"from":"family"}`)},
@@ -111,73 +110,61 @@ func TestStore_Assets_overlay(t *testing.T) {
 	s := NewStore(fsys)
 
 	got, err := s.Assets("catppuccin", "mocha")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	want := map[string]string{
+	testutil.NoErr(t, err)
+	testutil.Diff(t, map[string]string{
 		"zed.json": "catppuccin/zed.json",
 		"nvim.lua": "catppuccin/mocha/nvim.lua",
 		"eza.yml":  "catppuccin/mocha/eza.yml",
-	}
-
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("assets = %v\nwant %v", got, want)
-	}
-
-	bad := []string{"wallpaper", "a.png", "variant.toml", "family.toml"}
-
-	for _, b := range bad {
-		_, ok := got[b]
-		if ok {
-			t.Errorf("%q must not be an asset", b)
-		}
-	}
-}
-
-func TestStore_Resolve_badID(t *testing.T) {
-	s := NewStore(testFS())
-	if _, err := s.Resolve("nofamilyslash"); err == nil {
-		t.Error("expected error for id without a slash")
-	}
+	}, got)
 }
 
 func TestStore_PickRandom(t *testing.T) {
 	s := NewStore(testFS())
 
-	t.Run("pick the only dark theme", func(t *testing.T) {
+	t.Run("dark picks the only dark theme", func(t *testing.T) {
 		got, err := s.PickRandom(Dark)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID() != "catppuccin/mocha" {
-			t.Errorf("dark pick = %q, want catppuccin/mocha", got.ID())
-		}
+		testutil.NoErr(t, err)
+		testutil.Equal(t, got.ID(), "catppuccin/mocha")
 	})
 
-	t.Run("pick the only light theme", func(t *testing.T) {
+	t.Run("light picks the only light theme", func(t *testing.T) {
 		got, err := s.PickRandom(Light)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID() != "catppuccin/latte" {
-			t.Errorf("light pick = %q, want catppuccin/latte", got.ID())
-		}
+		testutil.NoErr(t, err)
+		testutil.Equal(t, got.ID(), "catppuccin/latte")
 	})
 
 	t.Run("no appearance picks any known theme", func(t *testing.T) {
 		all, err := s.ListAll()
-		if err != nil {
-			t.Fatal(err)
-		}
+		testutil.NoErr(t, err)
 		for range 20 {
 			got, err := s.PickRandom("")
-			if err != nil {
-				t.Fatal(err)
-			}
+			testutil.NoErr(t, err)
 			if !slices.Contains(all, got.ID()) {
 				t.Fatalf("picked %q, not in %v", got.ID(), all)
 			}
 		}
 	})
+}
+
+func benchFS(n int) fstest.MapFS {
+	fsys := fstest.MapFS{}
+	for i := range n {
+		path := fmt.Sprintf("family%04d/family.toml", i)
+		fsys[path] = &fstest.MapFile{Data: []byte("[defaults]\nappearance = \"dark\"\n")}
+	}
+	return fsys
+}
+
+func BenchmarkStore_allFamilies(b *testing.B) {
+	for _, n := range []int{10, 100, 1000} {
+		b.Run(fmt.Sprintf("families=%d", n), func(b *testing.B) {
+			s := NewStore(benchFS(n))
+			b.ReportAllocs()
+			for b.Loop() {
+				if _, err := s.allFamilies(); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
 }

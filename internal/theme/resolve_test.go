@@ -1,11 +1,12 @@
 package theme
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/nico-mayer/themectl-cli/internal/testutil"
 )
 
-func TestResolve_VariantOverridesFamily(t *testing.T) {
+func TestResolve_variantOverridesFamily(t *testing.T) {
 	fam := Family{
 		Name: "catppuccin",
 		Defaults: Spec{
@@ -23,38 +24,33 @@ func TestResolve_VariantOverridesFamily(t *testing.T) {
 	}
 
 	got, err := Resolve(fam, v)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.NoErr(t, err)
+	testutil.Equal(t, got.Appearance, Light)
+	testutil.Equal(t, got.ID(), "catppuccin/latte")
+	testutil.Diff(t, []string{"catppuccin/macchiato"}, got.WallpaperSources)
+	testutil.Diff(t, map[string]string{"ghostty": "catppuccin-latte", "eza": "cat-eza"}, got.Themes)
+}
 
-	if got.Appearance != Light {
-		t.Errorf("appearance = %q, want light", got.Appearance)
-	}
-	if !reflect.DeepEqual(got.WallpaperSources, []string{"catppuccin/macchiato"}) {
-		t.Errorf("wallpaper sources = %v, want the variant's own list", got.WallpaperSources)
-	}
-	want := map[string]string{"ghostty": "catppuccin-latte", "eza": "cat-eza"}
-	if !reflect.DeepEqual(got.Themes, want) {
-		t.Errorf("themes = %v, want %v", got.Themes, want)
-	}
-	if got.ID() != "catppuccin/latte" {
-		t.Errorf("id = %q", got.ID())
-	}
+func TestResolve_variantInheritsAppearance(t *testing.T) {
+	fam := Family{Name: "f", Defaults: Spec{Appearance: new(Dark)}}
+	v := Variant{Name: "v"}
+
+	got, err := Resolve(fam, v)
+	testutil.NoErr(t, err)
+	testutil.Equal(t, got.Appearance, Dark)
 }
 
 func TestResolve_wallpaperSourcesNotInherited(t *testing.T) {
 	fam := Family{Name: "f", Defaults: Spec{Appearance: new(Dark)}}
-	v := Variant{Name: "v", Spec: Spec{}}
-	got, _ := Resolve(fam, v)
-	if len(got.WallpaperSources) != 0 {
-		t.Errorf("want no sources, got %v", got.WallpaperSources)
-	}
+	v := Variant{Name: "v"}
+
+	got, err := Resolve(fam, v)
+	testutil.NoErr(t, err)
+	testutil.Equal(t, len(got.WallpaperSources), 0)
 }
 
 func TestResolve_missingAppearanceFails(t *testing.T) {
-	fam := Family{Name: "f", Defaults: Spec{}}
-	v := Variant{Name: "v", Spec: Spec{}}
-	if _, err := Resolve(fam, v); err == nil {
+	if _, err := Resolve(Family{Name: "f"}, Variant{Name: "v"}); err == nil {
 		t.Fatal("expected error when appearance is set by neither family nor variant")
 	}
 }
@@ -62,8 +58,8 @@ func TestResolve_missingAppearanceFails(t *testing.T) {
 func TestResolve_doesNotMutateInputs(t *testing.T) {
 	fam := Family{Name: "f", Defaults: Spec{Appearance: new(Dark), Themes: map[string]string{"a": "1"}}}
 	v := Variant{Name: "v", Spec: Spec{Themes: map[string]string{"b": "2"}}}
-	_, _ = Resolve(fam, v)
-	if len(fam.Defaults.Themes) != 1 {
-		t.Errorf("Resolve mutated the family's map: %v", fam.Defaults.Themes)
-	}
+
+	_, err := Resolve(fam, v)
+	testutil.NoErr(t, err)
+	testutil.Diff(t, map[string]string{"a": "1"}, fam.Defaults.Themes)
 }

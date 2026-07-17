@@ -1,10 +1,14 @@
 package theme
 
-import "testing"
+import (
+	"testing"
 
-func TestAppearance(t *testing.T) {
+	"github.com/nico-mayer/themectl-cli/internal/testutil"
+)
+
+func TestParseAppearance(t *testing.T) {
 	tests := []struct {
-		key     string
+		in      string
 		want    Appearance
 		wantErr bool
 	}{
@@ -16,12 +20,10 @@ func TestAppearance(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got, err := ParseAppearance(tt.key)
-		if got != tt.want {
-			t.Errorf("ParseAppearance(%q) = %q, want %q", tt.key, got, tt.want)
-		}
-		if (err != nil) != tt.wantErr {
-			t.Fatalf("ParseAppearance(%q) err = %v, wantErr %v", tt.key, err, tt.wantErr)
-		}
+		t.Run(tt.in, func(t *testing.T) {
+			got, err := ParseAppearance(tt.in)
+			testutil.Equal(t, got, tt.want)
+			testutil.Equal(t, err != nil, tt.wantErr)
+		})
 	}
 }

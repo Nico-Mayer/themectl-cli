@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/charmbracelet/huh v1.0.0
 	github.com/charmbracelet/log v1.0.0
+	github.com/google/go-cmp v0.7.0
 	github.com/reujab/wallpaper v0.0.0-20210630195606-5f9f655b3740
 	github.com/urfave/cli/v3 v3.10.1
 	golang.org/x/sys v0.47.0

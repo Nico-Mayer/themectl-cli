@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 	"testing/fstest"
+
+	"github.com/nico-mayer/themectl-cli/internal/testutil"
 )
 
 func TestStore_Materialize(t *testing.T) {
@@ -15,22 +17,17 @@ func TestStore_Materialize(t *testing.T) {
 		"catppuccin/mocha/nvim.lua":     {Data: []byte("-- mocha")},
 	}
 	dest := filepath.Join(t.TempDir(), "current")
+	testutil.NoErr(t, os.MkdirAll(dest, 0o755))
+	testutil.NoErr(t, os.WriteFile(filepath.Join(dest, "stale.txt"), []byte("stale"), 0o644))
 
-	_ = os.MkdirAll(dest, 0o755)
-	_ = os.WriteFile(filepath.Join(dest, "stale.txt"), []byte("stale"), 0o644)
+	testutil.NoErr(t, NewStore(fsys).Materialize("catppuccin/mocha", dest))
 
-	store := NewStore(fsys)
-	err := store.Materialize("catppuccin/mocha", dest)
-	if err != nil {
-		t.Fatal(err)
-	}
+	zed, _ := os.ReadFile(filepath.Join(dest, "zed.json"))
+	testutil.Equal(t, string(zed), `{"from":"family"}`)
 
-	if b, _ := os.ReadFile(filepath.Join(dest, "zed.json")); string(b) != `{"from":"family"}` {
-		t.Errorf("inherited zed.json not materialized: %q", b)
-	}
-	if b, _ := os.ReadFile(filepath.Join(dest, "nvim.lua")); string(b) != "-- mocha" {
-		t.Errorf("variant nvim.lua not materialized: %q", b)
-	}
+	nvim, _ := os.ReadFile(filepath.Join(dest, "nvim.lua"))
+	testutil.Equal(t, string(nvim), "-- mocha")
+
 	if _, err := os.Stat(filepath.Join(dest, "stale.txt")); err == nil {
 		t.Error("stale file survived; dest must be rebuilt from scratch")
 	}

@@ -4,97 +4,62 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/nico-mayer/themectl-cli/internal/testutil"
 )
 
-func TestCreateSymlink(t *testing.T) {
+func TestSymlink_createsLink(t *testing.T) {
 	tmp := t.TempDir()
-
 	source := filepath.Join(tmp, "source")
 	target := filepath.Join(tmp, "foo", "bar", "link")
+	testutil.NoErr(t, os.WriteFile(source, []byte("test"), 0o644))
 
-	_ = os.WriteFile(source, []byte("test"), 0644)
-
-	err := symlink(source, target)
-	if err != nil {
-		t.Fatalf("got error but wanted none %v", err)
-	}
+	testutil.NoErr(t, symlink(source, target))
 
 	info, err := os.Lstat(target)
-	if err != nil {
-		t.Fatal("got error reading target info")
-	}
-
-	if info.Mode()&os.ModeSymlink != os.ModeSymlink {
-		t.Error("target is not a symlink")
-	}
+	testutil.NoErr(t, err)
+	testutil.Equal(t, info.Mode()&os.ModeSymlink, os.ModeSymlink)
 
 	dest, err := os.Readlink(target)
-	if err != nil {
-		t.Fatal("failed to read target from symlink")
-	}
-
-	if dest != source {
-		t.Errorf("target and source diverge, source: %q, target:%q", source, target)
-	}
+	testutil.NoErr(t, err)
+	testutil.Equal(t, dest, source)
 }
 
-func TestOverwritesLinkWithDifferentTarget(t *testing.T) {
+func TestSymlink_overwritesStaleLink(t *testing.T) {
 	tmp := t.TempDir()
-
 	source := filepath.Join(tmp, "source")
-	secondSource := filepath.Join(tmp, "source2")
+	stale := filepath.Join(tmp, "stale")
 	target := filepath.Join(tmp, "foo", "bar", "link")
+	testutil.NoErr(t, os.WriteFile(source, []byte("test"), 0o644))
+	testutil.NoErr(t, os.WriteFile(stale, []byte("stale"), 0o644))
+	testutil.NoErr(t, os.MkdirAll(filepath.Dir(target), 0o755))
+	testutil.NoErr(t, os.Symlink(stale, target))
 
-	_ = os.WriteFile(source, []byte("test"), 0644)
-	_ = os.WriteFile(secondSource, []byte("evil file"), 0644)
-
-	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-		t.Fatal("failed to create target dir")
-	}
-	_ = os.Symlink(secondSource, target)
-
-	err := symlink(source, target)
-	if err != nil {
-		t.Fatalf("got error but wanted none %v", err)
-	}
+	testutil.NoErr(t, symlink(source, target))
 
 	dest, err := os.Readlink(target)
-	if err != nil {
-		t.Fatal("failed to read target from symlink")
-	}
+	testutil.NoErr(t, err)
+	testutil.Equal(t, dest, source)
+}
 
-	if dest != source {
-		t.Errorf("want: %q, got: %q", source, dest)
+func TestSymlink_refusesToOverwriteRealFile(t *testing.T) {
+	tmp := t.TempDir()
+	source := filepath.Join(tmp, "source")
+	target := filepath.Join(tmp, "foo", "bar", "link")
+	testutil.NoErr(t, os.WriteFile(source, []byte("test"), 0o644))
+	testutil.NoErr(t, os.MkdirAll(filepath.Dir(target), 0o755))
+	testutil.NoErr(t, os.WriteFile(target, []byte("real file"), 0o644))
+
+	if err := symlink(source, target); err == nil {
+		t.Fatal("expected error when target is a real file")
 	}
 }
 
-func TestErrorWhenOverwritingRealFile(t *testing.T) {
+func TestSymlink_missingSourceFails(t *testing.T) {
 	tmp := t.TempDir()
 
-	source := filepath.Join(tmp, "source")
-	target := filepath.Join(tmp, "foo", "bar", "link")
-
-	_ = os.WriteFile(source, []byte("test"), 0644)
-
-	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-		t.Fatal("failed to create target dir")
-	}
-	_ = os.WriteFile(target, []byte("i am a real file on disc"), 0644)
-
-	err := symlink(source, target)
+	err := symlink(filepath.Join(tmp, "source"), filepath.Join(tmp, "link"))
 	if err == nil {
-		t.Fatalf("got no error but want one")
-	}
-}
-
-func TestSourceNeedsToExist(t *testing.T) {
-	tmp := t.TempDir()
-
-	source := filepath.Join(tmp, "source")
-	target := filepath.Join(tmp, "foo", "bar", "link")
-
-	err := symlink(source, target)
-	if err == nil {
-		t.Errorf("symlinc created, but shoudent")
+		t.Error("expected error when source does not exist")
 	}
 }

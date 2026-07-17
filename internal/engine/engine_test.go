@@ -25,7 +25,7 @@ func (f fakeIntegration) Apply(t theme.Resolved) error {
 	return f.err
 }
 
-func TestEngine_runsAll_andAggregatesErrors(t *testing.T) {
+func TestEngine_Apply_runsAllAndAggregatesErrors(t *testing.T) {
 	var ranA, ranC bool
 	e := New([]integration.Integration{
 		fakeIntegration{name: "a", applied: &ranA},
@@ -35,9 +35,9 @@ func TestEngine_runsAll_andAggregatesErrors(t *testing.T) {
 
 	err := e.Apply(theme.Resolved{Family: "f", Variant: "v"})
 	if err == nil {
-		t.Fatalf("want aggregated error mentioning b, got %v", err)
+		t.Fatal("want aggregated error from failing integration, got nil")
 	}
 	if !ranA || !ranC {
-		t.Errorf("a failing integration must not srop the others (a=%v c=%v)", ranA, ranC)
+		t.Errorf("a failing integration must not stop the others (a=%v c=%v)", ranA, ranC)
 	}
 }

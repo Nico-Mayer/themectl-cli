@@ -3,19 +3,18 @@ package wallpaper
 import (
 	"os"
 	"path/filepath"
-	"reflect"
 	"slices"
 	"testing"
 
+	"github.com/nico-mayer/themectl-cli/internal/testutil"
 	"github.com/nico-mayer/themectl-cli/internal/theme"
 )
 
-func TestCollectingSourceDirs(t *testing.T) {
+func TestCollectSourceDirs(t *testing.T) {
 	themesDir := t.TempDir()
-	sharedWallpapersDir := t.TempDir()
-
+	sharedDir := t.TempDir()
 	mkDirAll(t, themesDir, "nord/dark/wallpaper", "catppuccin/mocha/wallpaper")
-	mkDirAll(t, sharedWallpapersDir, "gen_dark")
+	mkDirAll(t, sharedDir, "gen_dark")
 
 	res := func(sources ...string) theme.Resolved {
 		return theme.Resolved{
@@ -31,12 +30,12 @@ func TestCollectingSourceDirs(t *testing.T) {
 		want  []string
 	}{
 		{
-			name:  "no sources: should return themes own wallpaper path",
+			name:  "no sources returns the theme's own wallpaper dir",
 			theme: res(),
 			want:  []string{filepath.Join(themesDir, "catppuccin", "mocha", "wallpaper")},
 		},
 		{
-			name:  "source resolving other theme",
+			name:  "source resolving another theme",
 			theme: res("nord/dark"),
 			want: []string{
 				filepath.Join(themesDir, "catppuccin", "mocha", "wallpaper"),
@@ -48,25 +47,21 @@ func TestCollectingSourceDirs(t *testing.T) {
 			theme: res("gen_dark"),
 			want: []string{
 				filepath.Join(themesDir, "catppuccin", "mocha", "wallpaper"),
-				filepath.Join(sharedWallpapersDir, "gen_dark"),
+				filepath.Join(sharedDir, "gen_dark"),
 			},
 		},
 		{
 			name:  "unknown source contributes nothing",
 			theme: res("does-not-exist"),
-			want:  []string{filepath.Join(themesDir, "catppuccin/mocha/wallpaper")},
+			want:  []string{filepath.Join(themesDir, "catppuccin", "mocha", "wallpaper")},
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			slices.Sort(tc.want)
-			manager := NewManager(themesDir, sharedWallpapersDir)
-			got := manager.collectSourceDirs(tc.theme)
-
-			if !reflect.DeepEqual(got, tc.want) {
-				t.Errorf("got: %v\n want: %v", got, tc.want)
-			}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			slices.Sort(tt.want)
+			got := NewManager(themesDir, sharedDir).collectSourceDirs(tt.theme)
+			testutil.Diff(t, tt.want, got)
 		})
 	}
 }
@@ -77,62 +72,37 @@ func TestCollectCandidates(t *testing.T) {
 	png := touch(t, dir, "b.png")
 	heic := touch(t, dir, "c.heic")
 	jpg := touch(t, dir, "d.jpg")
-
 	touch(t, dir, "note.txt")
 	touch(t, dir, "nested/deep.png")
 
-	got := collectCandidates([]string{
-		dir,
-		filepath.Join(dir, "missing"),
+	got := collectCandidates([]string{dir, filepath.Join(dir, "missing")})
+
+	testutil.Diff(t, []string{jpegUpper, png, heic, jpg}, got)
+}
+
+func TestPickWallpaper(t *testing.T) {
+	t.Run("single candidate returned even if already current", func(t *testing.T) {
+		got := pickWallpaper([]string{"/w/a.png"}, "/w/a.png")
+		testutil.Equal(t, got, "/w/a.png")
 	})
 
-	want := []string{jpegUpper, png, heic, jpg}
-
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("\n got: %v \n want: %v", got, want)
-	}
+	t.Run("no candidates returns current", func(t *testing.T) {
+		got := pickWallpaper(nil, "/w/a.png")
+		testutil.Equal(t, got, "/w/a.png")
+	})
 }
 
 func mkDirAll(t *testing.T, root string, rel ...string) {
 	t.Helper()
 	for _, p := range rel {
-		if err := os.MkdirAll(filepath.Join(root, p), 0o755); err != nil {
-			t.Fatal(err)
-		}
+		testutil.NoErr(t, os.MkdirAll(filepath.Join(root, p), 0o755))
 	}
 }
 
 func touch(t *testing.T, root, rel string) string {
 	t.Helper()
 	p := filepath.Join(root, rel)
-
-	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := os.WriteFile(p, nil, 0o644); err != nil {
-		t.Fatal(err)
-	}
+	testutil.NoErr(t, os.MkdirAll(filepath.Dir(p), 0o755))
+	testutil.NoErr(t, os.WriteFile(p, nil, 0o644))
 	return p
-}
-
-func TestPickWallpaper(t *testing.T) {
-	t.Run("single candidate should return even if set already", func(t *testing.T) {
-		candidates := []string{"/w/a.png"}
-		got := pickWallpaper(candidates, "/w/a.png")
-		want := candidates[0]
-		if got != want {
-			t.Errorf("got %q, want %q", got, want)
-		}
-	})
-
-	t.Run("no candidate should return current", func(t *testing.T) {
-		candidates := []string{}
-		current := "/w/a.png"
-		got := pickWallpaper(candidates, current)
-		want := current
-		if got != want {
-			t.Errorf("got %q, want %q", got, want)
-		}
-	})
 }

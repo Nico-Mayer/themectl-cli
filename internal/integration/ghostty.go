@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -47,14 +48,22 @@ func (g Ghostty) Apply(t theme.Resolved) error {
 		return fmt.Errorf("write ghostty config: %w", err)
 	}
 
-	if err = sendUpdateSignal(); err != nil {
-		slog.Warn("Ghostty update signal failed", "err", err)
+	if err := reloadGhostty(); err != nil {
+		slog.Warn("Ghostty config reload failed", "err", err)
 	}
 
 	return nil
 }
 
-func sendUpdateSignal() error {
-	cmd := exec.Command("pkill", "-USR2", "-f", "ghostty")
-	return cmd.Run()
+func reloadGhostty() error {
+	err := exec.Command("pkill", "-USR2", "ghostty").Run()
+	if err == nil {
+		return nil
+	}
+
+	var exit *exec.ExitError
+	if errors.As(err, &exit) && exit.ExitCode() == 1 {
+		return nil
+	}
+	return fmt.Errorf("signal ghostty reload: %w", err)
 }
