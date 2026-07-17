@@ -109,7 +109,7 @@ func (s *Store) resolveAll() ([]Resolved, error) {
 	return out, nil
 }
 
-func (s *Store) PickRandom(a *Appearance) (Resolved, error) {
+func (s *Store) PickRandom(a Appearance) (Resolved, error) {
 	all, err := s.resolveAll()
 	if err != nil {
 		return Resolved{}, err
@@ -117,7 +117,7 @@ func (s *Store) PickRandom(a *Appearance) (Resolved, error) {
 
 	var candidates []Resolved
 	for _, res := range all {
-		if a == nil || res.Appearance == *a {
+		if a == "" || res.Appearance == a {
 			candidates = append(candidates, res)
 		}
 	}

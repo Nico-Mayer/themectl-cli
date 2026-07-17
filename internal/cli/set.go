@@ -60,13 +60,13 @@ func setRandom(cfg config.Config, store *theme.Store, eng *engine.Engine) *cli.C
 				return fmt.Errorf("cannot use --light and --dark together")
 			}
 
-			var appearance *theme.Appearance
+			var appearance theme.Appearance
 			if light {
-				appearance = new(theme.Light)
+				appearance = theme.Light
 			} else if dark {
-				appearance = new(theme.Dark)
+				appearance = theme.Dark
 			} else {
-				appearance = nil
+				appearance = ""
 			}
 
 			resolved, err := store.PickRandom(appearance)

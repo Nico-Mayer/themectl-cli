@@ -146,7 +146,7 @@ func TestStore_PickRandom(t *testing.T) {
 	s := NewStore(testFS())
 
 	t.Run("pick the only dark theme", func(t *testing.T) {
-		got, err := s.PickRandom(new(Dark))
+		got, err := s.PickRandom(Dark)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -156,7 +156,7 @@ func TestStore_PickRandom(t *testing.T) {
 	})
 
 	t.Run("pick the only light theme", func(t *testing.T) {
-		got, err := s.PickRandom(new(Light))
+		got, err := s.PickRandom(Light)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -171,7 +171,7 @@ func TestStore_PickRandom(t *testing.T) {
 			t.Fatal(err)
 		}
 		for range 20 {
-			got, err := s.PickRandom(nil)
+			got, err := s.PickRandom("")
 			if err != nil {
 				t.Fatal(err)
 			}
