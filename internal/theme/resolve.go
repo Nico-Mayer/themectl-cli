@@ -10,6 +10,15 @@ type Spec struct {
 	Themes     map[string]string `toml:"themes"`
 }
 
+type FamilyFile struct {
+	Defaults Spec `toml:"defaults"`
+}
+
+type VariantFile struct {
+	Spec
+	WallpaperSources []string `toml:"wallpaper_sources"`
+}
+
 type Family struct {
 	Name     string
 	Defaults Spec

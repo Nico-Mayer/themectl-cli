@@ -212,9 +212,7 @@ func (s *Store) decode(path string, v any) error {
 }
 
 func (s *Store) family(name string) (Family, error) {
-	var wrap struct {
-		Defaults Spec `toml:"defaults"`
-	}
+	var wrap FamilyFile
 
 	err := s.decode(filepath.Join(name, "family.toml"), &wrap)
 	if err != nil {
@@ -228,10 +226,7 @@ func (s *Store) family(name string) (Family, error) {
 }
 
 func (s *Store) variant(family, name string) (Variant, error) {
-	var v struct {
-		Spec
-		WallpaperSources []string `toml:"wallpaper_sources"`
-	}
+	var v VariantFile
 
 	err := s.decode(filepath.Join(family, name, "variant.toml"), &v)
 	if err != nil {
