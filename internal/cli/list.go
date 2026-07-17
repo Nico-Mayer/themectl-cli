@@ -14,7 +14,10 @@ func listCmd(store *theme.Store) *cli.Command {
 		Aliases: []string{"ls"},
 		Usage:   "List all available themes",
 		Action: func(ctx context.Context, c *cli.Command) error {
-			all, _ := store.ListAll()
+			all, err := store.ListAll()
+			if err != nil {
+				return err
+			}
 
 			for _, t := range all {
 				fmt.Println(t)

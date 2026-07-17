@@ -112,6 +112,10 @@ func exists(path string) bool {
 }
 
 func pickWallpaper(candidates []string, current string) string {
+	candidates = slices.DeleteFunc(slices.Clone(candidates), func(s string) bool {
+		return s == current
+	})
+
 	switch len(candidates) {
 	case 0:
 		return current
@@ -119,9 +123,6 @@ func pickWallpaper(candidates []string, current string) string {
 		return candidates[0]
 	default:
 		picked := candidates[rand.IntN(len(candidates))]
-		for picked == current {
-			picked = candidates[rand.IntN(len(candidates))]
-		}
 		return picked
 	}
 }

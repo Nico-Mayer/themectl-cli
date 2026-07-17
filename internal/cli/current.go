@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/nico-mayer/themectl-cli/internal/config"
 	"github.com/nico-mayer/themectl-cli/internal/theme"
@@ -19,7 +20,7 @@ func currentCmd(cfg config.Config) *urFaveCli.Command {
 				return err
 			}
 
-			fmt.Println(curr)
+			fmt.Println(strings.TrimSpace(curr))
 
 			return nil
 		},

@@ -31,6 +31,9 @@ func wallpaperCmd(cfg config.Config, store *theme.Store) *urFaveCli.Command {
 				}
 
 				res, err := store.Resolve(curr)
+				if err != nil {
+					return err
+				}
 
 				return manager.ApplyRandom(res)
 			}

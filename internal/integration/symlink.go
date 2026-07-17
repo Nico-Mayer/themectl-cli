@@ -9,9 +9,10 @@ import (
 
 func symlink(source, target string) error {
 	if _, err := os.Stat(source); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("source file does not exist %q", source)
+		}
 		return err
-	} else if errors.Is(err, os.ErrExist) {
-		return fmt.Errorf("source file does not exist %q", source)
 	}
 
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {

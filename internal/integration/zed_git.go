@@ -65,6 +65,7 @@ func (g gitInstaller) Ensure(ref ExtensionRef) error {
 }
 
 func remoteHead(url string) (string, error) {
+	url = strings.TrimPrefix(url, "https://")
 	out, err := exec.Command("git", "ls-remote", "https://"+url, "HEAD").Output()
 	if err != nil {
 		return "", fmt.Errorf("ls-remote %s: %w", url, err)

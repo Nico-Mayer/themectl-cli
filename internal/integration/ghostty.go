@@ -2,6 +2,7 @@ package integration
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"regexp"
@@ -47,7 +48,7 @@ func (g Ghostty) Apply(t theme.Resolved) error {
 	}
 
 	if err = sendUpdateSignal(); err != nil {
-		sendUpdateSignal()
+		slog.Warn("Ghostty update signal failed", "err", err)
 	}
 
 	return nil
