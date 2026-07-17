@@ -27,7 +27,7 @@ func TestResolve_variantOverridesFamily(t *testing.T) {
 	testutil.NoErr(t, err)
 	testutil.Equal(t, got.Appearance, Light)
 	testutil.Equal(t, got.ID(), "catppuccin/latte")
-	testutil.Diff(t, []string{"catppuccin/macchiato"}, got.WallpaperSources)
+	testutil.Diff(t, []string{"catppuccin/macchiato", "catppuccin/latte"}, got.WallpaperSources)
 	testutil.Diff(t, map[string]string{"ghostty": "catppuccin-latte", "eza": "cat-eza"}, got.Themes)
 }
 
@@ -40,13 +40,13 @@ func TestResolve_variantInheritsAppearance(t *testing.T) {
 	testutil.Equal(t, got.Appearance, Dark)
 }
 
-func TestResolve_wallpaperSourcesNotInherited(t *testing.T) {
+func TestResolve_wallpaperSourcesIncludeOwnID(t *testing.T) {
 	fam := Family{Name: "f", Defaults: Spec{Appearance: new(Dark)}}
 	v := Variant{Name: "v"}
 
 	got, err := Resolve(fam, v)
 	testutil.NoErr(t, err)
-	testutil.Equal(t, len(got.WallpaperSources), 0)
+	testutil.Diff(t, []string{"f/v"}, got.WallpaperSources)
 }
 
 func TestResolve_missingAppearanceFails(t *testing.T) {

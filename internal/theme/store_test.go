@@ -40,11 +40,11 @@ func TestStore_Resolve(t *testing.T) {
 	testutil.Equal(t, latte.Appearance, Light)
 	testutil.Equal(t, latte.Themes["ghostty"], "catppuccin-latte")
 	testutil.Equal(t, latte.Themes["eza"], "cat-eza")
-	testutil.Equal(t, len(latte.WallpaperSources), 0)
+	testutil.Diff(t, []string{"catppuccin/latte"}, latte.WallpaperSources)
 
 	mocha, err := s.Resolve("catppuccin/mocha")
 	testutil.NoErr(t, err)
-	testutil.Diff(t, []string{"catppuccin/latte", "nature"}, mocha.WallpaperSources)
+	testutil.Diff(t, []string{"catppuccin/latte", "nature", "catppuccin/mocha"}, mocha.WallpaperSources)
 }
 
 func TestStore_Resolve_inheritsAppearanceFromFamily(t *testing.T) {

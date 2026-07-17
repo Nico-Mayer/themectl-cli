@@ -20,7 +20,7 @@ func TestCollectSourceDirs(t *testing.T) {
 		return theme.Resolved{
 			Family:           "catppuccin",
 			Variant:          "mocha",
-			WallpaperSources: sources,
+			WallpaperSources: append(sources, "catppuccin/mocha"),
 		}
 	}
 

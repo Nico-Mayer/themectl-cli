@@ -3,6 +3,7 @@ package theme
 import (
 	"fmt"
 	"maps"
+	"slices"
 )
 
 type Spec struct {
@@ -48,11 +49,12 @@ func Resolve(fam Family, variant Variant) (Resolved, error) {
 		return Resolved{}, fmt.Errorf("theme %s/%s: appearance set by neither variant nor family", fam.Name, variant.Name)
 	}
 
+	id := fam.Name + "/" + variant.Name
 	return Resolved{
 		Family:           fam.Name,
 		Variant:          variant.Name,
 		Appearance:       *spec.Appearance,
-		WallpaperSources: variant.WallpaperSources,
+		WallpaperSources: append(slices.Clone(variant.WallpaperSources), id),
 		Themes:           spec.Themes,
 	}, nil
 }

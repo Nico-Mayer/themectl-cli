@@ -51,5 +51,4 @@ appearance = "dark"
 
 - [ ] `reapply` / `refresh` re-run integrations for the current theme without changing it
 - [ ] `list` filters + active marker — `--light` / `--dark`, `*` on the active theme
-- [ ] `current --details` resolved appearance, per-tool theme names, wallpaper sources
 - [ ] `wallpaper set <file>` + `wallpaper list [theme]` direct control and discovery

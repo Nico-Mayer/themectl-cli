@@ -72,9 +72,8 @@ func (m Manager) ListCandidates(t theme.Resolved) []string {
 
 func (m Manager) collectSourceDirs(theme theme.Resolved) []string {
 	var sources = []string{}
-	wallSources := append(theme.WallpaperSources, theme.ID())
 
-	for _, s := range wallSources {
+	for _, s := range theme.WallpaperSources {
 		sourcesPath := filepath.Join(m.SharedWallpapersDir, s)
 		if exists(sourcesPath) {
 			sources = append(sources, sourcesPath)
