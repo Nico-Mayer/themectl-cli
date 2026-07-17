@@ -1,10 +1,13 @@
+//go:generate go run .
 package main
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/invopop/jsonschema"
 	"github.com/nico-mayer/themectl-cli/internal/config"
@@ -29,7 +32,24 @@ func main() {
 	}
 }
 
+func moduleRoot() (string, error) {
+	out, err := exec.Command("go", "env", "GOMOD").Output()
+	if err != nil {
+		return "", fmt.Errorf("locate go.mod: %w", err)
+	}
+	gomod := strings.TrimSpace(string(out))
+	if gomod == "" || gomod == os.DevNull {
+		return "", fmt.Errorf("not inside a Go module")
+	}
+	return filepath.Dir(gomod), nil
+}
+
 func run() error {
+	root, err := moduleRoot()
+	if err != nil {
+		return err
+	}
+
 	r := &jsonschema.Reflector{
 		FieldNameTag:   "toml",
 		DoNotReference: true, // inline nested types instead of $defs/$ref
@@ -72,7 +92,7 @@ func run() error {
 		}
 		data = append(data, '\n')
 
-		path := filepath.Join("schemas", t.file)
+		path := filepath.Join(root, "schemas", t.file)
 		if err := os.WriteFile(path, data, 0o644); err != nil {
 			return err
 		}

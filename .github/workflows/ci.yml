@@ -6,16 +6,18 @@ on:
   pull_request:
 
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Test
-        run: go test ./...
+      - uses: jdx/mise-action@v3
+        with:
+          install: true
+          cache: true
+      - name: Test and lint
+        run: mise run check
       - name: Schemas match Go types
-        run: |
-          go generate ./...
-          git diff --exit-code schemas/
+        run: mise run schema:check
