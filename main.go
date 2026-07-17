@@ -2,51 +2,34 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/charmbracelet/log"
-	"github.com/nico-mayer/themectl-cli/cmd"
+	"github.com/nico-mayer/themectl-cli/internal/cli"
 	"github.com/nico-mayer/themectl-cli/internal/config"
-	"github.com/urfave/cli/v3"
+	"github.com/nico-mayer/themectl-cli/internal/engine"
+	"github.com/nico-mayer/themectl-cli/internal/integration"
+	"github.com/nico-mayer/themectl-cli/internal/theme"
 )
 
 func main() {
-	cmd := &cli.Command{
-		Name:  "themectl",
-		Usage: "my theme switcher cli stuffi",
-		Flags: []cli.Flag{
-			&cli.BoolFlag{Name: "verbose", Usage: "Prints more logs to stder", Aliases: []string{"v"}},
-		},
-		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
-			cfg, err := config.Get()
-			if err != nil {
-				return ctx, err
-			}
-
-			if c.Bool("verbose") {
-				log.SetLevel(log.DebugLevel)
-				b, err := json.MarshalIndent(cfg, "", "  ")
-				if err != nil {
-					return ctx, fmt.Errorf("failed to marshal config %v", err)
-				}
-
-				log.Debug("loaded", "config", string(b))
-			}
-			log.SetReportTimestamp(false)
-
-			return ctx, nil
-		},
-		Commands: []*cli.Command{
-			cmd.List(),
-			cmd.Set(),
-			cmd.Current(),
-			cmd.Wallpaper(),
-		},
+	root := defaultRoot()
+	cfg, err := config.Load(root)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	if err := cmd.Run(context.Background(), os.Args); err != nil {
-		log.Fatal(fmt.Errorf("themectl failed: %w", err))
+	store := theme.NewStore(os.DirFS(cfg.ThemesDir()))
+	engine := engine.New(integration.Enabled(cfg))
+
+	app := cli.New(cfg, store, engine)
+	if err := app.Run(context.Background(), os.Args); err != nil {
+		log.Fatal(err)
 	}
+}
+
+func defaultRoot() string {
+	userHome, _ := os.UserHomeDir()
+	return filepath.Join(userHome, ".config", "themectl")
 }

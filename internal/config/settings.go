@@ -1,127 +1,95 @@
 package config
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/BurntSushi/toml"
 )
 
 type Settings struct {
-	Integrations []string          `json:"integrations"`
-	DefaultTheme string            `json:"default-theme,omitempty"`
-	ConfigDirs   map[string]string `json:"configdirs,omitempty"`
+	Integrations []string          `toml:"integrations"`
+	DefaultTheme string            `toml:"default-theme,omitempty"`
+	ConfigDirs   map[string]string `toml:"config-dirs,omitempty"`
 }
 
-func DefaultSettings() Settings {
-	userHome, err := os.UserHomeDir()
+func loadSettings(path string) (Settings, error) {
+	s := defaultSettings()
+
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return s, nil
+	}
 	if err != nil {
-		userHome = os.Getenv("HOME")
+		return Settings{}, fmt.Errorf("read settings: %w", err)
+	}
+
+	if err := toml.Unmarshal(data, &s); err != nil {
+		return Settings{}, fmt.Errorf("parse settings: %w", err)
+	}
+	return s, nil
+}
+
+func defaultSettings() Settings {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = os.Getenv("HOME")
+	}
+
+	winConfigHome := ""
+	if runtime.GOOS == "windows" {
+		winConfigHome, _ = os.UserConfigDir()
 	}
 
 	return Settings{
 		Integrations: []string{
 			"ghostty",
 			"zed",
-			"system-theme",
+			"system-appearance",
 			"wallpaper",
 			"yazi",
 			"eza",
 			"nvim",
 			"helix",
 		},
-		ConfigDirs: map[string]string{
-			"ghostty": filepath.Join(userHome, ".config", "ghostty"),
-			"zed":     zedConfigDir(userHome),
-			"helix":   filepath.Join(userHome, ".config", "helix"),
-			"yazi":    yaziConfigDir(userHome),
-		},
+		ConfigDirs: defaultConfigDirs(home, winConfigHome),
 	}
 }
 
-func LoadSettings(path string) (Settings, error) {
-	defaults := DefaultSettings()
-
-	data, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return defaults, nil
+func defaultConfigDirs(home, winConfigHome string) map[string]string {
+	dirs := map[string]string{
+		"ghostty": filepath.Join(home, ".config", "ghostty"),
+		"helix":   filepath.Join(home, ".config", "helix"),
+		"zed":     filepath.Join(home, ".config", "zed"),
+		"yazi":    filepath.Join(home, ".config", "yazi"),
 	}
-	if err != nil {
-		return Settings{}, fmt.Errorf("read settings %w", err)
+	if winConfigHome != "" {
+		dirs["zed"] = filepath.Join(winConfigHome, "zed")
+		dirs["yazi"] = filepath.Join(winConfigHome, "yazi", "config")
 	}
-
-	// This merges because unmarshal is overwriting in existing struct
-	if err := json.Unmarshal(data, &defaults); err != nil {
-		return Settings{}, fmt.Errorf("parse settings: %w", err)
-	}
-
-	return defaults, nil
+	return dirs
 }
 
 func (s Settings) ConfigDirFor(integration string) string {
-	if s.ConfigDirs == nil {
-		return ""
-	}
-
-	path, ok := s.ConfigDirs[integration]
-	if !ok {
-		return ""
-	}
-
-	path = strings.TrimSpace(path)
+	path := strings.TrimSpace(s.ConfigDirs[integration])
 	if path == "" {
 		return ""
 	}
+	return expandPath(path)
+}
 
+func expandPath(path string) string {
 	path = os.ExpandEnv(path)
-
-	if path == "~" {
-		home, err := os.UserHomeDir()
-		if err == nil {
-			return home
-		}
+	if path != "~" && !strings.HasPrefix(path, "~/") {
 		return path
 	}
-
-	if strings.HasPrefix(path, "~/") {
-		home, err := os.UserHomeDir()
-		if err == nil {
-			return filepath.Join(home, strings.TrimPrefix(path, "~/"))
-		}
-	}
-
-	return path
-}
-
-func zedConfigDir(userHome string) string {
-	platform := runtime.GOOS
-
-	configHome, err := os.UserConfigDir()
+	home, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal("User Config dir not set")
+		return path
 	}
-
-	if platform == "windows" {
-		return filepath.Join(configHome, "zed")
-	}
-
-	return filepath.Join(userHome, ".config", "zed")
-}
-
-func yaziConfigDir(userHome string) string {
-	platform := runtime.GOOS
-
-	if platform == "windows" {
-		configHome, err := os.UserConfigDir()
-		if err != nil {
-			return ""
-		}
-		return filepath.Join(configHome, "yazi", "config")
-	}
-
-	return filepath.Join(userHome, ".config", "yazi")
+	return filepath.Join(home, path[1:])
 }

@@ -1,39 +1,22 @@
 package config
 
-import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"sync"
-)
+import "path/filepath"
 
 type Config struct {
-	Paths
-	Settings
+	Root     string
+	Settings Settings
 }
 
-var (
-	instance Config
-	once     sync.Once
-	initErr  error
-)
+func (c Config) ThemesDir() string           { return filepath.Join(c.Root, "themes") }
+func (c Config) CurrentDir() string          { return filepath.Join(c.Root, "current") }
+func (c Config) CurrentFile() string         { return filepath.Join(c.Root, ".current") }
+func (c Config) SharedWallpapersDir() string { return filepath.Join(c.Root, "shared_wallpapers") }
 
-func Get() (Config, error) {
-	once.Do(func() {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			initErr = fmt.Errorf("resolve user home dir: %w", err)
-			return
-		}
+func Load(root string) (Config, error) {
+	s, err := loadSettings(filepath.Join(root, "themectl.toml"))
+	if err != nil {
+		return Config{}, err
+	}
 
-		paths := NewPaths(filepath.Join(home, ".config", "themectl"))
-		settings, err := LoadSettings(paths.SettingsPath)
-		if err != nil {
-			initErr = err
-			return
-		}
-		instance = Config{Paths: paths, Settings: settings}
-	})
-
-	return instance, initErr
+	return Config{Root: root, Settings: s}, nil
 }
