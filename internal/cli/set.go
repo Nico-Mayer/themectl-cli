@@ -139,7 +139,7 @@ func pickTheme(store *theme.Store) (string, error) {
 				Title("Themes").
 				Options(options...).
 				Filtering(true).
-				Height(10).
+				// Height(10).
 				Value(&selected),
 		),
 	)

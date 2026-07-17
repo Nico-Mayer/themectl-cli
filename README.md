@@ -33,6 +33,7 @@ appearance = "dark"
 
 ### Features
 
+- [ ] Add some sort of pallet witch could be diplayed when picking a theme in raycast extension
 - [ ] Install command to install themes from a GitHub URL
 - [ ] Create theme cmd which opens tui form and generates a folder to work on in themesDir()
 - [ ] `doctor` / `status` command report current theme, settings, and which integrations are applied/available
