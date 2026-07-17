@@ -6,3 +6,13 @@ go build -o themectl
 sudo mv -f themectl /usr/local/bin/themectl
 themectl completion fish > ~/.config/fish/completions/themectl.fish
 """
+
+[tasks.test]
+description = "Run Tests"
+run = """
+echo Running tests...
+gotestsum ./...
+"""
+
+[tools]
+"go:gotest.tools/gotestsum" = "latest"

@@ -17,6 +17,18 @@ themectl wallpaper --random   # reshuffle wallpaper for current theme
 themectl -v <cmd>             # verbose logs to stderr
 ```
 
+## Schemas
+
+JSON Schemas for the TOML files live in [`schemas/`](schemas/): `family.schema.json`,
+`variant.schema.json` and `settings.schema.json`. TOML LSPs (tombi, taplo /
+Even Better TOML) pick them up via a directive on the first line for
+completions and validation:
+
+```toml
+#:schema https://raw.githubusercontent.com/Nico-Mayer/themectl-cli/main/schemas/variant.schema.json
+appearance = "dark"
+```
+
 ## Roadmap
 
 ### Features
