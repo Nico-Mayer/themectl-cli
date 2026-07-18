@@ -42,7 +42,7 @@ description = "Bump version (major|minor|patch), tag, and push to trigger the re
 usage = 'arg "[bump]" default="patch" help="major|minor|patch"'
 run = """
 set -e
-last=$(git tag -l 'v*' --sort=-v:refname | head -n1)
+last=$(git tag -l 'v[01].*' --sort=-v:refname | head -n1)
 v=${last#v}; v=${v:-0.0.0}
 maj=${v%%.*}; rest=${v#*.}; min=${rest%%.*}; pat=${rest#*.}
 case "$usage_bump" in
