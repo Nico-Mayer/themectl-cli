@@ -17,8 +17,8 @@ func (Eza) Name() string {
 	return "eza"
 }
 
-func (i Eza) Apply(t theme.Resolved) error {
-	sourceFile := filepath.Join(i.Cfg.CurrentDir(), "eza.yml")
+func (e Eza) Apply(t theme.Resolved) error {
+	sourceFile := filepath.Join(e.Cfg.CurrentDir(), "eza.yml")
 	userHomePath, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("resolve user home dir: %w", err)
@@ -26,4 +26,8 @@ func (i Eza) Apply(t theme.Resolved) error {
 	targetFile := filepath.Join(userHomePath, ".config", "eza", "theme.yml")
 
 	return symlink(sourceFile, targetFile)
+}
+
+func (e Eza) Check() error {
+	return checkFileExists("eza theme file", filepath.Join(e.Cfg.CurrentDir(), "eza.yml"))
 }

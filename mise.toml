@@ -5,7 +5,7 @@ svu = "latest"
 
 [tasks.build]
 description = "Compile the themectl binary"
-run = "go build -o themectl ./cmd/themectl"
+run = "go build -o themectl ."
 
 [tasks.install]
 description = "Build, install to /usr/local/bin, and refresh fish completions"

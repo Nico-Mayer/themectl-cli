@@ -38,6 +38,7 @@ appearance = "dark"
 - `install` command: install themes from a GitHub URL
 - Allow theme specs to reference assets by URL instead of bundling them (link existing ports, no duplication). Needs network + caching for offline use.
 - Add a option in settings to make a integration exclusicve for one operating system or exlude for one
+- Philips Hue integration?
 
 ### Missing integrations
 

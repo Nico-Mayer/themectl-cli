@@ -60,8 +60,8 @@ func TestEngine_Apply_skipsUnhealthyIntegrations(t *testing.T) {
 	})
 
 	err := e.Apply(theme.Resolved{Family: "f", Variant: "v"})
-	if err == nil {
-		t.Fatal("want error from unhealthy integration, got nil")
+	if err != nil {
+		t.Fatalf("unhealthy integration must only warn, not fail apply: %v", err)
 	}
 	if ranBroken {
 		t.Error("unhealthy integration must not be applied")

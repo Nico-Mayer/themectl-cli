@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,6 +24,17 @@ func checkConfigDir(name, path string) error {
 	}
 	if _, err := os.Stat(filepath.Dir(path)); err != nil {
 		return fmt.Errorf("%s config dir missing: %w", name, err)
+	}
+	return nil
+}
+
+func checkFileExists(desc, path string) error {
+	_, err := os.Stat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("%s not found", desc)
+	}
+	if err != nil {
+		return fmt.Errorf("check %s: %w", desc, err)
 	}
 	return nil
 }

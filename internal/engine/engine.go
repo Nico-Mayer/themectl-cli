@@ -21,14 +21,14 @@ func New(ints []integration.Integration) *Engine {
 }
 
 func (e *Engine) Apply(t theme.Resolved) error {
+	warnErrors := make([]error, len(e.integrations))
 	errs := make([]error, len(e.integrations))
 	var wg sync.WaitGroup
 	for i, in := range e.integrations {
 		wg.Go(func() {
 			if hc, ok := in.(integration.HealthChecker); ok {
 				if err := hc.Check(); err != nil {
-					slog.Warn("integration unhealthy, skipping", "integration", in.Name(), "err", err)
-					errs[i] = fmt.Errorf("%s: %w", in.Name(), err)
+					warnErrors[i] = err
 					return
 				}
 			}
@@ -40,5 +40,12 @@ func (e *Engine) Apply(t theme.Resolved) error {
 		})
 	}
 	wg.Wait()
+
+	for i, err := range warnErrors {
+		if err != nil {
+			slog.Warn("integration unhealthy, skipping", "integration", e.integrations[i].Name(), "err", err)
+		}
+	}
+
 	return errors.Join(errs...)
 }
