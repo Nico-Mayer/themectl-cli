@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Nico-Mayer/themectl-cli/internal/config"
-	"github.com/Nico-Mayer/themectl-cli/internal/integration"
-	"github.com/Nico-Mayer/themectl-cli/internal/theme"
+	"github.com/Nico-Mayer/themectl/internal/config"
+	"github.com/Nico-Mayer/themectl/internal/integration"
+	"github.com/Nico-Mayer/themectl/internal/theme"
 	"github.com/invopop/jsonschema"
 )
 

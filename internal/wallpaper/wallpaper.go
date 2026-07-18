@@ -8,7 +8,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Nico-Mayer/themectl-cli/internal/theme"
+	"github.com/Nico-Mayer/themectl/internal/theme"
 	rjWall "github.com/reujab/wallpaper"
 )
 

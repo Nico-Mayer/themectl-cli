@@ -6,7 +6,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/Nico-Mayer/themectl-cli/internal/testutil"
+	"github.com/Nico-Mayer/themectl/internal/testutil"
 )
 
 func testFS() fstest.MapFS {

@@ -4,17 +4,15 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 
-	"github.com/Nico-Mayer/themectl-cli/internal/cli"
-	"github.com/Nico-Mayer/themectl-cli/internal/config"
-	"github.com/Nico-Mayer/themectl-cli/internal/engine"
-	"github.com/Nico-Mayer/themectl-cli/internal/integration"
-	"github.com/Nico-Mayer/themectl-cli/internal/theme"
+	"github.com/Nico-Mayer/themectl/internal/cli"
+	"github.com/Nico-Mayer/themectl/internal/config"
+	"github.com/Nico-Mayer/themectl/internal/engine"
+	"github.com/Nico-Mayer/themectl/internal/integration"
+	"github.com/Nico-Mayer/themectl/internal/theme"
 	"github.com/charmbracelet/log"
 )
-
-// version is set at build time by goreleaser via ldflags.
-var version = "dev"
 
 func main() {
 	root := defaultRoot()
@@ -27,10 +25,17 @@ func main() {
 	engine := engine.New(integration.Enabled(cfg))
 
 	app := cli.New(cfg, store, engine)
-	app.Version = version
+	app.Version = version()
 	if err := app.Run(context.Background(), os.Args); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func version() string {
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" {
+		return info.Main.Version
+	}
+	return "unknown"
 }
 
 func defaultRoot() string {

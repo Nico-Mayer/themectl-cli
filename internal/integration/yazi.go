@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Nico-Mayer/themectl-cli/internal/config"
-	"github.com/Nico-Mayer/themectl-cli/internal/theme"
+	"github.com/Nico-Mayer/themectl/internal/config"
+	"github.com/Nico-Mayer/themectl/internal/theme"
 )
 
 type Yazi struct {

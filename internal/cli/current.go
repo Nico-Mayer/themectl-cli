@@ -9,8 +9,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Nico-Mayer/themectl-cli/internal/config"
-	"github.com/Nico-Mayer/themectl-cli/internal/theme"
+	"github.com/Nico-Mayer/themectl/internal/config"
+	"github.com/Nico-Mayer/themectl/internal/theme"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/mattn/go-isatty"

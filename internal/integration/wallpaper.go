@@ -1,8 +1,8 @@
 package integration
 
 import (
-	"github.com/Nico-Mayer/themectl-cli/internal/theme"
-	"github.com/Nico-Mayer/themectl-cli/internal/wallpaper"
+	"github.com/Nico-Mayer/themectl/internal/theme"
+	"github.com/Nico-Mayer/themectl/internal/wallpaper"
 )
 
 type Wallpaper struct {

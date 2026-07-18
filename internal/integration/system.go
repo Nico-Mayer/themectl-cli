@@ -1,7 +1,7 @@
 package integration
 
 import (
-	"github.com/Nico-Mayer/themectl-cli/internal/theme"
+	"github.com/Nico-Mayer/themectl/internal/theme"
 )
 
 type SystemAppearance struct{}
