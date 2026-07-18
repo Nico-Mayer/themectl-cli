@@ -22,6 +22,11 @@ wallpaper_sources = ["catppuccin/latte", "nature"]
 [themes]
 ghostty = "catppuccin-mocha"
 `)},
+		"catppuccin/frappe/variant.toml": {Data: []byte(`
+wallpaper_sources = ["catppuccin/latte", "nature"]
+[themes]
+ghostty = "catppuccin-frappe"
+`)},
 		"catppuccin/latte/variant.toml": {Data: []byte(`
 appearance = "light"
 [themes]
@@ -68,9 +73,34 @@ func TestStore_Resolve_badID(t *testing.T) {
 
 func TestStore_List(t *testing.T) {
 	s := NewStore(testFS())
-	got, err := s.List("catppuccin")
+	got, err := s.listVariants("catppuccin")
 	testutil.NoErr(t, err)
-	testutil.Diff(t, []string{"latte", "mocha"}, got)
+	testutil.Diff(t, []string{"frappe", "latte", "mocha"}, got)
+}
+
+func TestStore_ListAllByAppearance(t *testing.T) {
+	s := NewStore(testFS())
+	mocha, err := s.Resolve("catppuccin/mocha")
+	testutil.NoErr(t, err)
+	frappe, err := s.Resolve("catppuccin/frappe")
+	testutil.NoErr(t, err)
+	latte, err := s.Resolve("catppuccin/latte")
+	testutil.NoErr(t, err)
+
+	tests := []struct {
+		name       string
+		want       []Resolved
+		appearance Appearance
+	}{
+		{"all dark themes", []Resolved{frappe, mocha}, Dark},
+		{"all light themes", []Resolved{latte}, Light},
+	}
+
+	for _, tc := range tests {
+		got, err := s.ListAllByAppearance(tc.appearance)
+		testutil.NoErr(t, err)
+		testutil.Diff(t, tc.want, got)
+	}
 }
 
 func TestStore_AssetPath(t *testing.T) {

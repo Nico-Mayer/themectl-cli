@@ -1,6 +1,7 @@
 package theme
 
 import (
+	"cmp"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -49,7 +50,7 @@ func (s *Store) Resolve(id string) (Resolved, error) {
 	return Resolve(family, variant)
 }
 
-func (s *Store) List(family string) ([]string, error) {
+func (s *Store) listVariants(family string) ([]string, error) {
 	entries, err := fs.ReadDir(s.fsys, family)
 	if err != nil {
 		return []string{}, fmt.Errorf("read family %q: %w", family, err)
@@ -73,7 +74,7 @@ func (s *Store) ListAll() ([]string, error) {
 
 	var out []string
 	for _, fam := range families {
-		variants, err := s.List(fam)
+		variants, err := s.listVariants(fam)
 		if err != nil {
 			return nil, err
 		}
@@ -81,6 +82,22 @@ func (s *Store) ListAll() ([]string, error) {
 			out = append(out, fam+"/"+v)
 		}
 	}
+	return out, nil
+}
+
+func (s *Store) ListAllByAppearance(a Appearance) ([]Resolved, error) {
+	all, err := s.resolveAll()
+	if err != nil {
+		return nil, err
+	}
+
+	var out []Resolved
+	for _, r := range all {
+		if r.Appearance == a {
+			out = append(out, r)
+		}
+	}
+
 	return out, nil
 }
 
@@ -109,6 +126,10 @@ func (s *Store) resolveAll() ([]Resolved, error) {
 	for r := range ch {
 		out = append(out, r)
 	}
+
+	slices.SortFunc(out, func(a, b Resolved) int {
+		return cmp.Compare(a.ID(), b.ID())
+	})
 
 	return out, nil
 }
