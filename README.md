@@ -49,5 +49,3 @@ appearance = "dark"
 - [ ] Chromium verify feasibility, may need elevated privileges on macOS to set policies (Helium and other Chromium forks)
 
 ### Quick wins
-
-- [ ] `list` filters + active marker — `--light` / `--dark`, `*` on the active theme

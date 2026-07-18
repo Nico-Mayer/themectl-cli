@@ -3,12 +3,24 @@ package cli
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 
+	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-isatty"
+	"github.com/nico-mayer/themectl-cli/internal/config"
 	"github.com/nico-mayer/themectl-cli/internal/theme"
 	"github.com/urfave/cli/v3"
 )
 
-func listCmd(store *theme.Store) *cli.Command {
+const listColGap = 4
+
+var (
+	activeStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("5"))
+	listHeaderStyle = lipgloss.NewStyle().Faint(true)
+)
+
+func listCmd(cfg config.Config, store *theme.Store) *cli.Command {
 	return &cli.Command{
 		Name:    "list",
 		Aliases: []string{"ls"},
@@ -33,35 +45,56 @@ func listCmd(store *theme.Store) *cli.Command {
 				return fmt.Errorf("cannot use --light and --dark together")
 			}
 
-			if light {
-				return listByAppearance(store, theme.Light)
+			var all []theme.Resolved
+			var err error
+			switch {
+			case light:
+				all, err = store.ListAllByAppearance(theme.Light)
+			case dark:
+				all, err = store.ListAllByAppearance(theme.Dark)
+			default:
+				all, err = store.ListAllResolved()
 			}
-			if dark {
-				return listByAppearance(store, theme.Dark)
-			}
-
-			all, err := store.ListAll()
 			if err != nil {
 				return err
 			}
 
-			for _, t := range all {
-				fmt.Println(t)
+			if !isatty.IsTerminal(os.Stdout.Fd()) {
+				for _, t := range all {
+					fmt.Println(t.ID())
+				}
+				return nil
 			}
+
+			curr, _ := theme.ReadCurrent(cfg.CurrentFile())
+			fmt.Println(renderThemeList(all, strings.TrimSpace(curr)))
 
 			return nil
 		},
 	}
 }
 
-func listByAppearance(store *theme.Store, a theme.Appearance) error {
-	all, err := store.ListAllByAppearance(a)
-	if err != nil {
-		return err
+func renderThemeList(themes []theme.Resolved, current string) string {
+	width := len("Theme")
+	for _, t := range themes {
+		width = max(width, len(t.ID()))
+	}
+	width += listColGap
+
+	lines := []string{listHeaderStyle.Render(fmt.Sprintf("  %-*s%s", width, "Theme", "Appearance"))}
+	for _, t := range themes {
+		appearanceStyle := darkStyle
+		if t.Appearance == theme.Light {
+			appearanceStyle = lightStyle
+		}
+
+		id := fmt.Sprintf("  %-*s", width, t.ID())
+		if t.ID() == current {
+			id = activeStyle.Render(fmt.Sprintf("● %-*s", width, t.ID()))
+		}
+
+		lines = append(lines, id+appearanceStyle.UnsetPadding().Render(string(t.Appearance)))
 	}
 
-	for _, t := range all {
-		fmt.Println(t.ID())
-	}
-	return nil
+	return strings.Join(lines, "\n")
 }

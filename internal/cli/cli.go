@@ -25,7 +25,7 @@ func New(cfg config.Config, store *theme.Store, engine *engine.Engine) *urfaveCl
 			},
 		},
 		Commands: []*urfaveCli.Command{
-			listCmd(store),
+			listCmd(cfg, store),
 			setCmd(cfg, store, engine),
 			currentCmd(cfg, store),
 			wallpaperCmd(cfg, store),

@@ -85,6 +85,10 @@ func (s *Store) ListAll() ([]string, error) {
 	return out, nil
 }
 
+func (s *Store) ListAllResolved() ([]Resolved, error) {
+	return s.resolveAll()
+}
+
 func (s *Store) ListAllByAppearance(a Appearance) ([]Resolved, error) {
 	all, err := s.resolveAll()
 	if err != nil {
