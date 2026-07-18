@@ -46,7 +46,7 @@ func setCmd(cfg config.Config, store *theme.Store, eng *engine.Engine) *cli.Comm
 			if c.Args().Len() > 0 {
 				return // theme already typed, don't re-suggest
 			}
-			all, err := store.ListAll()
+			all, err := store.IDs()
 			if err != nil {
 				return
 			}
@@ -122,7 +122,7 @@ func applyTheme(resolvedTheme theme.Resolved, cfg config.Config, store *theme.St
 }
 
 func pickTheme(store *theme.Store) (string, error) {
-	all, err := store.ListAll()
+	all, err := store.IDs()
 	if err != nil {
 		return "", err
 	}

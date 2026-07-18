@@ -97,33 +97,9 @@ func TestStore_ListAllByAppearance(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got, err := s.ListAllByAppearance(tc.appearance)
+		got, err := s.List(tc.appearance)
 		testutil.NoErr(t, err)
 		testutil.Diff(t, tc.want, got)
-	}
-}
-
-func TestStore_AssetPath(t *testing.T) {
-	s := NewStore(testFS())
-
-	tests := []struct {
-		name    string
-		variant string
-		asset   string
-		want    string
-		wantOk  bool
-	}{
-		{name: "variant has asset", variant: "mocha", asset: "nvim.lua", want: "catppuccin/mocha/nvim.lua", wantOk: true},
-		{name: "variant inherits from family", variant: "latte", asset: "nvim.lua", want: "catppuccin/nvim.lua", wantOk: true},
-		{name: "neither has asset", variant: "latte", asset: "eza.yml", want: "", wantOk: false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, ok := s.AssetPath("catppuccin", tt.variant, tt.asset)
-			testutil.Equal(t, got, tt.want)
-			testutil.Equal(t, ok, tt.wantOk)
-		})
 	}
 }
 
@@ -164,7 +140,7 @@ func TestStore_PickRandom(t *testing.T) {
 	})
 
 	t.Run("no appearance picks any known theme", func(t *testing.T) {
-		all, err := s.ListAll()
+		all, err := s.IDs()
 		testutil.NoErr(t, err)
 		for range 20 {
 			got, err := s.PickRandom("")

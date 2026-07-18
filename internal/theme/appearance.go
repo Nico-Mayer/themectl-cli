@@ -10,8 +10,9 @@ import (
 type Appearance string
 
 const (
-	Dark  Appearance = "dark"
-	Light Appearance = "light"
+	Dark          Appearance = "dark"
+	Light         Appearance = "light"
+	AnyAppearance Appearance = ""
 )
 
 func ParseAppearance(s string) (Appearance, error) {

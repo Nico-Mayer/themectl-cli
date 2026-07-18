@@ -54,11 +54,11 @@ func listCmd(cfg config.Config, store *theme.Store) *cli.Command {
 			var err error
 			switch {
 			case light:
-				all, err = store.ListAllByAppearance(theme.Light)
+				all, err = store.List(theme.Light)
 			case dark:
-				all, err = store.ListAllByAppearance(theme.Dark)
+				all, err = store.List(theme.Dark)
 			default:
-				all, err = store.ListAllResolved()
+				all, err = store.List(theme.AnyAppearance)
 			}
 			if err != nil {
 				return err

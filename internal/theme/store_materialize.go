@@ -3,8 +3,11 @@ package theme
 import (
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
+	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -42,4 +45,38 @@ func (s *Store) Materialize(themeId, targetDir string) error {
 	}
 
 	return nil
+}
+
+func (s *Store) Assets(family, variant string) (map[string]string, error) {
+	familyAssets, err := s.assetsIn(family)
+	if err != nil {
+		return nil, err
+	}
+
+	variantAssets, err := s.assetsIn(path.Join(family, variant))
+	if err != nil {
+		return nil, err
+	}
+
+	maps.Copy(familyAssets, variantAssets)
+
+	return familyAssets, nil
+}
+
+func (s *Store) assetsIn(dir string) (map[string]string, error) {
+	entries, err := fs.ReadDir(s.fsys, dir)
+
+	out := make(map[string]string)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, e := range entries {
+		if e.IsDir() || slices.Contains(reservedNames, e.Name()) {
+			continue
+		}
+		out[e.Name()] = path.Join(dir, e.Name())
+	}
+
+	return out, nil
 }
