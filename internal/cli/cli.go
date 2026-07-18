@@ -29,6 +29,7 @@ func New(cfg config.Config, store *theme.Store, engine *engine.Engine) *urfaveCl
 			setCmd(cfg, store, engine),
 			currentCmd(cfg, store),
 			wallpaperCmd(cfg, store),
+			refreshCmd(cfg, store, engine),
 		},
 		Before: func(ctx context.Context, c *urfaveCli.Command) (context.Context, error) {
 			level := slog.LevelInfo

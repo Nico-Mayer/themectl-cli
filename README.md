@@ -40,6 +40,7 @@ appearance = "dark"
 - [ ] `--json` output flag for `list` (let others consume it for example read appearance)
 - [ ] Add some sort of release strategie (GoReleaser?)
 - [ ] Restrict asset copying on materialize to active integrations only, so the current folder doesn't get polluted _(low)_
+- [ ] Maybe instead of providing assets like eza and yazi themes there should also be a way to provide a url whitch generates the asset from that url, the drawback is that this needs a internet connection to work, so we i may need cashing. this would bring the benefit of just linking to a source for a port whitch already exists so no asset duplication needed in a theme spec.
 
 ### Missing integrations
 
@@ -49,5 +50,4 @@ appearance = "dark"
 
 ### Quick wins
 
-- [ ] `reapply` / `refresh` re-run integrations for the current theme without changing it
 - [ ] `list` filters + active marker — `--light` / `--dark`, `*` on the active theme
