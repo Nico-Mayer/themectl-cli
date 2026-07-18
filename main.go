@@ -13,6 +13,9 @@ import (
 	"github.com/nico-mayer/themectl-cli/internal/theme"
 )
 
+// version is set at build time by goreleaser via ldflags.
+var version = "dev"
+
 func main() {
 	root := defaultRoot()
 	cfg, err := config.Load(root)
@@ -24,6 +27,7 @@ func main() {
 	engine := engine.New(integration.Enabled(cfg))
 
 	app := cli.New(cfg, store, engine)
+	app.Version = version
 	if err := app.Run(context.Background(), os.Args); err != nil {
 		log.Fatal(err)
 	}

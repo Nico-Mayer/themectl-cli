@@ -1,5 +1,6 @@
 [tools]
 "go:gotest.tools/gotestsum" = "latest"
+goreleaser = "latest"
 
 [tasks.build]
 description = "Compile the themectl binary"
@@ -31,6 +32,23 @@ run = "go vet ./..."
 [tasks.check]
 description = "Run tests and lint"
 depends = ["test", "lint"]
+
+[tasks."release:snapshot"]
+description = "Build a local snapshot release with goreleaser"
+run = "goreleaser release --snapshot --clean"
+
+[tasks.release]
+description = "Tag today's date-based release (vYYYY.M.D) and push to trigger the release workflow"
+run = """
+set -e
+tag="v$(date -u +%Y.%m.%d | sed 's/\\.0/./g')"
+if git rev-parse "$tag" >/dev/null 2>&1; then
+  echo "tag $tag already exists" >&2
+  exit 1
+fi
+git tag "$tag"
+git push origin "$tag"
+"""
 
 [tasks."schema:gen"]
 description = "Generate JSON schemas from Go structs"

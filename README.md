@@ -33,13 +33,13 @@ appearance = "dark"
 
 ### Features
 
-- 1 Only materialize assets for active integrations, so the current folder doesn't get polluted _(low)_
-- 2 Set up a release pipeline (GoReleaser?)
-- 3 `doctor` / `status` command: report current theme, settings, and which integrations are applied/available
-- 4 Expose a color palette per theme so the raycast extension can display it in the theme picker
-- 5 `create` command: TUI form that scaffolds a new theme folder in themesDir()
-- 6 `install` command: install themes from a GitHub URL
-- 7 Allow theme specs to reference assets by URL instead of bundling them (link existing ports, no duplication). Needs network + caching for offline use.
+- Set up a release pipeline (GoReleaser?)
+- `doctor` / `status` command: report current theme, settings, and which integrations are applied/available
+- Expose a color palette per theme so the raycast extension can display it in the theme picker
+- `create` command: TUI form that scaffolds a new theme folder in themesDir()
+- `install` command: install themes from a GitHub URL
+- Allow theme specs to reference assets by URL instead of bundling them (link existing ports, no duplication). Needs network + caching for offline use.
+- Add a option in settings to make a integration exclusicve for one operating system or exlude for one
 
 ### Missing integrations
 
