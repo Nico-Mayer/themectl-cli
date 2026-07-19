@@ -21,8 +21,6 @@ type doctorReport struct {
 	Root              string              `json:"root"`
 	CurrentTheme      string              `json:"current_theme"`
 	CurrentThemeFound bool                `json:"current_theme_found"`
-	DefaultTheme      string              `json:"default_theme"`
-	DefaultThemeFound bool                `json:"default_theme_found"`
 	InstalledThemes   int                 `json:"installed_themes"`
 	Integrations      []integrationStatus `json:"integrations"`
 	Unknown           []string            `json:"unknown_integrations,omitempty"`
@@ -58,7 +56,6 @@ func buildDoctorReport(cfg config.Config, store *theme.Store) doctorReport {
 	r := doctorReport{
 		ConfigFile:   cfg.SettingsFile(),
 		Root:         cfg.Root,
-		DefaultTheme: cfg.Settings.DefaultTheme,
 		Integrations: integrationStatuses(cfg),
 		Unknown:      integration.Unknown(cfg),
 	}
@@ -78,7 +75,6 @@ func buildDoctorReport(cfg config.Config, store *theme.Store) doctorReport {
 		r.InstalledThemes = len(ids)
 	}
 	r.CurrentThemeFound = themeFound(store, r.CurrentTheme)
-	r.DefaultThemeFound = themeFound(store, r.DefaultTheme)
 
 	return r
 }
@@ -179,20 +175,12 @@ func themeRows(r doctorReport) []kvRow {
 	case !r.CurrentThemeFound:
 		currentTheme += "  " + doctorErrStyle.Render("(not found in themes dir)")
 	}
-	defaultTheme := r.DefaultTheme
-	switch {
-	case defaultTheme == "":
-		defaultTheme = doctorFaintStyle.Render("(not configured)")
-	case !r.DefaultThemeFound:
-		defaultTheme += "  " + doctorErrStyle.Render("(not found in themes dir)")
-	}
 	installed := fmt.Sprintf("%d", r.InstalledThemes)
 	if r.InstalledThemes == 0 {
 		installed = doctorErrStyle.Render("0 - add themes under " + r.Root + "/themes")
 	}
 	return []kvRow{
 		{"Current", currentTheme},
-		{"Default", defaultTheme},
 		{"Installed", installed},
 	}
 }

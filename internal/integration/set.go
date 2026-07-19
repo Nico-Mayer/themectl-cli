@@ -5,6 +5,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 
 	"github.com/Nico-Mayer/themectl/internal/config"
@@ -12,10 +13,10 @@ import (
 
 var available = map[string]func(cfg config.Config) Integration{
 	"ghostty": func(cfg config.Config) Integration {
-		return Ghostty{ConfigPath: configFilePath(cfg, "ghostty", "config.ghostty")}
+		return Ghostty{ConfigPath: cfg.Settings.Ghostty.Path(defaultConfigFile("ghostty", "config.ghostty"))}
 	},
 	"helix": func(cfg config.Config) Integration {
-		return Helix{ConfigPath: configFilePath(cfg, "helix", "config.toml")}
+		return Helix{ConfigPath: cfg.Settings.Helix.Path(defaultConfigFile("helix", "config.toml"))}
 	},
 	"nvim": func(cfg config.Config) Integration {
 		return Nvim{Cfg: cfg}
@@ -37,7 +38,7 @@ var available = map[string]func(cfg config.Config) Integration{
 	},
 	"zed": func(cfg config.Config) Integration {
 		z := Zed{
-			SettingsPath: configFilePath(cfg, "zed", "settings.json"),
+			SettingsPath: cfg.Settings.Zed.Path(defaultZedSettingsFile()),
 		}
 
 		usrConfigDir, err := os.UserConfigDir()
@@ -52,12 +53,18 @@ var available = map[string]func(cfg config.Config) Integration{
 	},
 }
 
-func configFilePath(cfg config.Config, name, file string) string {
-	dir := cfg.Settings.ConfigDirFor(name)
-	if dir == "" {
-		return ""
+func defaultConfigFile(app, file string) string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".config", app, file)
+}
+
+func defaultZedSettingsFile() string {
+	if runtime.GOOS == "windows" {
+		if dir, err := os.UserConfigDir(); err == nil {
+			return filepath.Join(dir, "zed", "settings.json")
+		}
 	}
-	return filepath.Join(dir, file)
+	return defaultConfigFile("zed", "settings.json")
 }
 
 func Names() []string {

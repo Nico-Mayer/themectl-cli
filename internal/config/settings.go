@@ -5,16 +5,28 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/BurntSushi/toml"
 )
 
 type Settings struct {
-	Integrations []string          `toml:"integrations,omitempty" jsonschema:"description=Integrations to run on theme apply. Replaces the default list.,uniqueItems=true"`
-	DefaultTheme string            `toml:"default-theme,omitempty" jsonschema:"pattern=^[^/]+/[^/]+$,description=Theme id in family/variant form."`
-	ConfigDirs   map[string]string `toml:"config-dirs,omitempty" jsonschema:"description=Per-integration config dir overrides. Supports env vars ($VAR) and a leading ~."`
+	Integrations []string     `toml:"integrations,omitempty" jsonschema:"description=Integrations to run on theme apply. Replaces the default list.,uniqueItems=true"`
+	Ghostty      FileSettings `toml:"ghostty,omitempty" jsonschema:"description=Ghostty integration settings."`
+	Helix        FileSettings `toml:"helix,omitempty" jsonschema:"description=Helix integration settings."`
+	Zed          FileSettings `toml:"zed,omitempty" jsonschema:"description=Zed integration settings."`
+}
+
+type FileSettings struct {
+	ConfigFile string `toml:"config_file,omitempty" jsonschema:"description=Path to the file themectl edits. Supports env vars ($VAR) and a leading ~."`
+}
+
+func (f FileSettings) Path(fallback string) string {
+	p := strings.TrimSpace(f.ConfigFile)
+	if p == "" {
+		return fallback
+	}
+	return expandPath(p)
 }
 
 func loadSettings(path string) (Settings, error) {
@@ -35,16 +47,6 @@ func loadSettings(path string) (Settings, error) {
 }
 
 func defaultSettings() Settings {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		home = os.Getenv("HOME")
-	}
-
-	winConfigHome := ""
-	if runtime.GOOS == "windows" {
-		winConfigHome, _ = os.UserConfigDir()
-	}
-
 	return Settings{
 		Integrations: []string{
 			"ghostty",
@@ -56,30 +58,7 @@ func defaultSettings() Settings {
 			"nvim",
 			"helix",
 		},
-		ConfigDirs: defaultConfigDirs(home, winConfigHome),
 	}
-}
-
-func defaultConfigDirs(home, winConfigHome string) map[string]string {
-	dirs := map[string]string{
-		"ghostty": filepath.Join(home, ".config", "ghostty"),
-		"helix":   filepath.Join(home, ".config", "helix"),
-		"zed":     filepath.Join(home, ".config", "zed"),
-		"yazi":    filepath.Join(home, ".config", "yazi"),
-	}
-	if winConfigHome != "" {
-		dirs["zed"] = filepath.Join(winConfigHome, "zed")
-		dirs["yazi"] = filepath.Join(winConfigHome, "yazi", "config")
-	}
-	return dirs
-}
-
-func (s Settings) ConfigDirFor(integration string) string {
-	path := strings.TrimSpace(s.ConfigDirs[integration])
-	if path == "" {
-		return ""
-	}
-	return expandPath(path)
 }
 
 func expandPath(path string) string {
