@@ -52,6 +52,39 @@
       "additionalProperties": false,
       "type": "object",
       "description": "Zed integration settings."
+    },
+    "nvim": {
+      "properties": {
+        "target": {
+          "type": "string",
+          "description": "Where the symlink is created. Supports env vars ($VAR) and a leading ~."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "description": "Neovim integration settings."
+    },
+    "eza": {
+      "properties": {
+        "target": {
+          "type": "string",
+          "description": "Where the symlink is created. Supports env vars ($VAR) and a leading ~."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "description": "Eza integration settings."
+    },
+    "yazi": {
+      "properties": {
+        "target": {
+          "type": "string",
+          "description": "Where the symlink is created. Supports env vars ($VAR) and a leading ~."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "description": "Yazi integration settings."
     }
   },
   "additionalProperties": false,
