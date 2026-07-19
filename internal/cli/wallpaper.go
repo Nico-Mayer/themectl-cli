@@ -14,22 +14,22 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-func wallpaperCmd(cfg config.Config, store *theme.Store) *cli.Command {
+func (a app) wallpaperCmd() *cli.Command {
 	return &cli.Command{
 		Name:    "wallpaper",
 		Aliases: []string{"wall"},
 		Usage:   "Select and set the desktop wallpaper",
 		Commands: []*cli.Command{
-			listWallpapersCmd(cfg, store),
-			setWallpaperCmd(cfg, store),
+			a.listWallpapersCmd(),
+			a.setWallpaperCmd(),
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
-			resolved, err := resolveThemeOrCurrent(cfg, store, "")
+			resolved, err := resolveThemeOrCurrent(a.cfg, a.store, "")
 			if err != nil {
 				return err
 			}
 
-			manager := wallpaper.NewManager(cfg.ThemesDir(), cfg.SharedWallpapersDir())
+			manager := wallpaper.NewManager(a.cfg.ThemesDir(), a.cfg.SharedWallpapersDir())
 			selected, err := pickWallpaper(manager.ListCandidates(resolved))
 			if errors.Is(err, huh.ErrUserAborted) {
 				return nil
@@ -43,7 +43,7 @@ func wallpaperCmd(cfg config.Config, store *theme.Store) *cli.Command {
 	}
 }
 
-func listWallpapersCmd(cfg config.Config, store *theme.Store) *cli.Command {
+func (a app) listWallpapersCmd() *cli.Command {
 	return &cli.Command{
 		Name:      "list",
 		Aliases:   []string{"ls"},
@@ -56,12 +56,12 @@ func listWallpapersCmd(cfg config.Config, store *theme.Store) *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
-			resolved, err := resolveThemeOrCurrent(cfg, store, c.StringArg("theme"))
+			resolved, err := resolveThemeOrCurrent(a.cfg, a.store, c.StringArg("theme"))
 			if err != nil {
 				return err
 			}
 
-			manager := wallpaper.NewManager(cfg.ThemesDir(), cfg.SharedWallpapersDir())
+			manager := wallpaper.NewManager(a.cfg.ThemesDir(), a.cfg.SharedWallpapersDir())
 			for _, candidate := range manager.ListCandidates(resolved) {
 				fmt.Println(candidate)
 			}
@@ -71,7 +71,7 @@ func listWallpapersCmd(cfg config.Config, store *theme.Store) *cli.Command {
 	}
 }
 
-func setWallpaperCmd(cfg config.Config, store *theme.Store) *cli.Command {
+func (a app) setWallpaperCmd() *cli.Command {
 	return &cli.Command{
 		Name:      "set",
 		Usage:     "Set the wallpaper from a file or at random",
@@ -90,10 +90,10 @@ func setWallpaperCmd(cfg config.Config, store *theme.Store) *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
-			manager := wallpaper.NewManager(cfg.ThemesDir(), cfg.SharedWallpapersDir())
+			manager := wallpaper.NewManager(a.cfg.ThemesDir(), a.cfg.SharedWallpapersDir())
 
 			if c.Bool("random") {
-				return applyRandomWallpaper(cfg, store, manager)
+				return applyRandomWallpaper(a.cfg, a.store, manager)
 			}
 
 			path := c.StringArg("path")

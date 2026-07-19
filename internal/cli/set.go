@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/Nico-Mayer/themectl/internal/config"
-	"github.com/Nico-Mayer/themectl/internal/engine"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 	"github.com/charmbracelet/huh"
 	"github.com/urfave/cli/v3"
 )
 
-func setCmd(cfg config.Config, store *theme.Store, eng *engine.Engine) *cli.Command {
+func (a app) setCmd() *cli.Command {
 	return &cli.Command{
 		Name:      "set",
 		Aliases:   []string{"use", "apply"},
@@ -25,9 +23,9 @@ func setCmd(cfg config.Config, store *theme.Store, eng *engine.Engine) *cli.Comm
 				UsageText: "theme name (see 'themectl list')",
 			},
 		},
-		Commands: []*cli.Command{setRandom(cfg, store, eng)},
+		Commands: []*cli.Command{a.setRandom()},
 		Action: func(ctx context.Context, c *cli.Command) error {
-			themeName, err := resolveThemeArg(c.StringArg("theme"), store)
+			themeName, err := resolveThemeArg(c.StringArg("theme"), a.store)
 			if errors.Is(err, huh.ErrUserAborted) {
 				return nil
 			}
@@ -36,17 +34,17 @@ func setCmd(cfg config.Config, store *theme.Store, eng *engine.Engine) *cli.Comm
 			}
 
 			slog.Debug("resolving theme", "theme", themeName)
-			res, err := store.Resolve(themeName)
+			res, err := a.store.Resolve(themeName)
 			if err != nil {
 				return err
 			}
-			return applyTheme(res, cfg, store, eng)
+			return applyTheme(res, a)
 		},
 		ShellComplete: func(ctx context.Context, c *cli.Command) {
 			if c.Args().Len() > 0 {
 				return // theme already typed, don't re-suggest
 			}
-			all, err := store.IDs()
+			all, err := a.store.IDs()
 			if err != nil {
 				return
 			}
@@ -57,14 +55,7 @@ func setCmd(cfg config.Config, store *theme.Store, eng *engine.Engine) *cli.Comm
 	}
 }
 
-func resolveThemeArg(arg string, store *theme.Store) (string, error) {
-	if arg != "" {
-		return arg, nil
-	}
-	return pickTheme(store)
-}
-
-func setRandom(cfg config.Config, store *theme.Store, eng *engine.Engine) *cli.Command {
+func (a app) setRandom() *cli.Command {
 	return &cli.Command{
 		Name:  "random",
 		Usage: "sets a random theme",
@@ -75,24 +66,24 @@ func setRandom(cfg config.Config, store *theme.Store, eng *engine.Engine) *cli.C
 				return err
 			}
 
-			resolved, err := store.PickRandom(appearance)
+			resolved, err := a.store.PickRandom(appearance)
 			if err != nil {
 				return err
 			}
-			return applyTheme(resolved, cfg, store, eng)
+			return applyTheme(resolved, a)
 		},
 	}
 }
 
-func applyTheme(resolvedTheme theme.Resolved, cfg config.Config, store *theme.Store, eng *engine.Engine) error {
-	slog.Debug("materializing theme", "theme", resolvedTheme.ID(), "dir", cfg.CurrentDir())
-	if err := store.Materialize(resolvedTheme.ID(), cfg.CurrentDir()); err != nil {
+func applyTheme(resolvedTheme theme.Resolved, app app) error {
+	slog.Debug("materializing theme", "theme", resolvedTheme.ID(), "dir", app.cfg.CurrentDir())
+	if err := app.store.Materialize(resolvedTheme.ID(), app.cfg.CurrentDir()); err != nil {
 		return err
 	}
-	if err := eng.Apply(resolvedTheme); err != nil {
+	if err := app.engine.Apply(resolvedTheme); err != nil {
 		return err
 	}
-	if err := theme.WriteCurrent(cfg.CurrentFile(), resolvedTheme.ID()); err != nil {
+	if err := theme.WriteCurrent(app.cfg.CurrentFile(), resolvedTheme.ID()); err != nil {
 		return err
 	}
 	slog.Info("theme set", "theme", resolvedTheme.ID())
@@ -100,6 +91,7 @@ func applyTheme(resolvedTheme theme.Resolved, cfg config.Config, store *theme.St
 }
 
 func pickTheme(store *theme.Store) (string, error) {
+
 	all, err := store.IDs()
 	if err != nil {
 		return "", err
@@ -127,4 +119,10 @@ func pickTheme(store *theme.Store) (string, error) {
 	}
 
 	return selected, nil
+}
+func resolveThemeArg(arg string, store *theme.Store) (string, error) {
+	if arg != "" {
+		return arg, nil
+	}
+	return pickTheme(store)
 }

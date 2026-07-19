@@ -12,7 +12,20 @@ import (
 	urfaveCli "github.com/urfave/cli/v3"
 )
 
+type app struct {
+	cfg    config.Config
+	store  *theme.Store
+	engine *engine.Engine
+}
+
 func New(cfg config.Config, store *theme.Store, engine *engine.Engine) *urfaveCli.Command {
+
+	app := app{
+		cfg:    cfg,
+		store:  store,
+		engine: engine,
+	}
+
 	return &urfaveCli.Command{
 		Name:                  "themectl",
 		Usage:                 "Manage and apply themes across your tools",
@@ -25,12 +38,12 @@ func New(cfg config.Config, store *theme.Store, engine *engine.Engine) *urfaveCl
 			},
 		},
 		Commands: []*urfaveCli.Command{
-			listCmd(cfg, store),
-			setCmd(cfg, store, engine),
-			currentCmd(cfg, store),
-			wallpaperCmd(cfg, store),
-			refreshCmd(cfg, store, engine),
-			doctorCmd(cfg, store),
+			app.listCmd(),
+			app.setCmd(),
+			app.currentCmd(),
+			app.wallpaperCmd(),
+			app.refreshCmd(),
+			app.doctorCmd(),
 		},
 		Before: func(ctx context.Context, c *urfaveCli.Command) (context.Context, error) {
 			level := slog.LevelInfo

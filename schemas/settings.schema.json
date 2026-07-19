@@ -20,17 +20,38 @@
       "uniqueItems": true,
       "description": "Integrations to run on theme apply. Replaces the default list."
     },
-    "default-theme": {
-      "type": "string",
-      "pattern": "^[^/]+/[^/]+$",
-      "description": "Theme id in family/variant form."
-    },
-    "config-dirs": {
-      "additionalProperties": {
-        "type": "string"
+    "ghostty": {
+      "properties": {
+        "config_file": {
+          "type": "string",
+          "description": "Path to the file themectl edits. Supports env vars ($VAR) and a leading ~."
+        }
       },
+      "additionalProperties": false,
       "type": "object",
-      "description": "Per-integration config dir overrides. Supports env vars ($VAR) and a leading ~."
+      "description": "Ghostty integration settings."
+    },
+    "helix": {
+      "properties": {
+        "config_file": {
+          "type": "string",
+          "description": "Path to the file themectl edits. Supports env vars ($VAR) and a leading ~."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "description": "Helix integration settings."
+    },
+    "zed": {
+      "properties": {
+        "config_file": {
+          "type": "string",
+          "description": "Path to the file themectl edits. Supports env vars ($VAR) and a leading ~."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "description": "Zed integration settings."
     }
   },
   "additionalProperties": false,

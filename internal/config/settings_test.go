@@ -19,13 +19,12 @@ func TestLoadSettings(t *testing.T) {
 
 	t.Run("file values override defaults, rest kept", func(t *testing.T) {
 		path := filepath.Join(t.TempDir(), "settings.toml")
-		data := "default-theme = \"catppuccin\"\n\n[config-dirs]\nghostty = \"/custom\"\n"
+		data := "[ghostty]\nconfig_file = \"/custom/config.ghostty\"\n"
 		testutil.NoErr(t, os.WriteFile(path, []byte(data), 0o644))
 
 		s, err := loadSettings(path)
 		testutil.NoErr(t, err)
-		testutil.Equal(t, s.DefaultTheme, "catppuccin")
-		testutil.Equal(t, s.ConfigDirs["ghostty"], "/custom")
+		testutil.Equal(t, s.Ghostty.ConfigFile, "/custom/config.ghostty")
 		if len(s.Integrations) == 0 {
 			t.Error("default integrations lost during merge")
 		}
@@ -40,38 +39,30 @@ func TestLoadSettings(t *testing.T) {
 	})
 }
 
-func TestDefaultConfigDirs(t *testing.T) {
-	unix := defaultConfigDirs("/home/u", "")
-	testutil.Equal(t, unix["zed"], filepath.Join("/home/u", ".config", "zed"))
-
-	win := defaultConfigDirs(`C:\Users\u`, `C:\Users\u\AppData\Roaming`)
-	testutil.Equal(t, win["yazi"], filepath.Join(`C:\Users\u\AppData\Roaming`, "yazi", "config"))
-	testutil.Equal(t, win["ghostty"], filepath.Join(`C:\Users\u`, ".config", "ghostty"))
-}
-
-func TestConfigDirFor(t *testing.T) {
+func TestFileSettingsPath(t *testing.T) {
 	t.Setenv("HOME", "/home/u")
 	t.Setenv("THEMECTL_TEST_DIR", "/from-env")
 
+	const fallback = "/default/config"
+
 	tests := []struct {
 		name string
-		dirs map[string]string
+		file string
 		want string
 	}{
-		{name: "nil map", dirs: nil, want: ""},
-		{name: "missing key", dirs: map[string]string{}, want: ""},
-		{name: "blank value", dirs: map[string]string{"ghostty": "   "}, want: ""},
-		{name: "plain path", dirs: map[string]string{"ghostty": "/etc/ghostty"}, want: "/etc/ghostty"},
-		{name: "env var", dirs: map[string]string{"ghostty": "$THEMECTL_TEST_DIR"}, want: "/from-env"},
-		{name: "bare tilde", dirs: map[string]string{"ghostty": "~"}, want: "/home/u"},
-		{name: "tilde prefix", dirs: map[string]string{"ghostty": "~/x"}, want: "/home/u/x"},
-		{name: "tilde mid-path untouched", dirs: map[string]string{"ghostty": "/a/~/b"}, want: "/a/~/b"},
+		{name: "unset uses fallback", file: "", want: fallback},
+		{name: "blank uses fallback", file: "   ", want: fallback},
+		{name: "plain path", file: "/etc/ghostty/config", want: "/etc/ghostty/config"},
+		{name: "env var", file: "$THEMECTL_TEST_DIR/config", want: "/from-env/config"},
+		{name: "bare tilde", file: "~", want: "/home/u"},
+		{name: "tilde prefix", file: "~/x", want: "/home/u/x"},
+		{name: "tilde mid-path untouched", file: "/a/~/b", want: "/a/~/b"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := Settings{ConfigDirs: tt.dirs}
-			testutil.Equal(t, s.ConfigDirFor("ghostty"), tt.want)
+			f := FileSettings{ConfigFile: tt.file}
+			testutil.Equal(t, f.Path(fallback), tt.want)
 		})
 	}
 }
