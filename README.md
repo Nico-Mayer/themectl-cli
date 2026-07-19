@@ -69,6 +69,7 @@ zed = "$XDG_CONFIG_HOME/zed"
 - Allow theme specs to reference assets by URL instead of bundling them (link existing ports, no duplication). Needs network + caching for offline use.
 - Add a option in settings to make a integration exclusicve for one operating system or exlude for one
 - Philips Hue integration?
+- Some way of cleaning installed extensions to force reinstall after (example for zed)
 
 ### Missing integrations
 

@@ -85,7 +85,7 @@ func remoteHead(url string) (string, error) {
 func sparseClone(url, dst string) error {
 	steps := [][]string{
 		{"clone", "--depth", "1", "--filter=blob:none", "--no-checkout", "https://" + url, dst},
-		{"-C", dst, "sparse-checkout", "set", "themes"},
+		{"-C", dst, "sparse-checkout", "set", "themes", "icon_themes", "icons"},
 		{"-C", dst, "checkout"},
 	}
 	for _, args := range steps {

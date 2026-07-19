@@ -51,11 +51,13 @@ func (z Zed) Apply(t theme.Resolved) error {
 		return err
 	}
 
-	if spec.IconTheme != "" {
-		updated, err = setZedString(updated, "icon_theme", spec.IconTheme)
-		if err != nil {
-			return err
-		}
+	if spec.IconTheme == "" {
+		spec.IconTheme = "Zed (Default)"
+	}
+
+	updated, err = setZedString(updated, "icon_theme", spec.IconTheme)
+	if err != nil {
+		return err
 	}
 
 	if err := os.WriteFile(z.SettingsPath, []byte(updated), 0o644); err != nil {
