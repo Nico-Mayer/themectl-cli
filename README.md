@@ -63,13 +63,11 @@ zed = "$XDG_CONFIG_HOME/zed"
 
 ### Features
 
-- Expose a color palette per theme so the raycast extension can display it in the theme picker
 - `create` command: TUI form that scaffolds a new theme folder in themesDir()
 - `install` command: install themes from a GitHub URL
+- `clean <theme>` command: looks at its outside deps like zed extensions and uninstalls them and remove .head files for a reinstall without guard
 - Allow theme specs to reference assets by URL instead of bundling them (link existing ports, no duplication). Needs network + caching for offline use.
 - Add a option in settings to make a integration exclusicve for one operating system or exlude for one
-- Philips Hue integration?
-- Some way of cleaning installed extensions to force reinstall after (example for zed)
 
 ### Missing integrations
 
@@ -78,3 +76,8 @@ zed = "$XDG_CONFIG_HOME/zed"
 - [ ] Chromium verify feasibility, may need elevated privileges on macOS to set policies (Helium and other Chromium forks)
 
 ### Quick wins
+
+### Maybe
+
+- Expose a color palette per theme so the raycast extension can display it in the theme picker
+- Philips Hue integration?

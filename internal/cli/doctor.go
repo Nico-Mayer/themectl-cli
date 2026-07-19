@@ -36,14 +36,14 @@ type integrationStatus struct {
 	Checked bool   `json:"checked"`
 }
 
-func doctorCmd(cfg config.Config, store *theme.Store) *cli.Command {
+func (a app) doctorCmd() *cli.Command {
 	return &cli.Command{
 		Name:    "doctor",
 		Aliases: []string{"status"},
 		Usage:   "report current theme, settings, and integration status",
 		Flags:   []cli.Flag{jsonFlag()},
 		Action: func(ctx context.Context, c *cli.Command) error {
-			report := buildDoctorReport(cfg, store)
+			report := buildDoctorReport(a.cfg, a.store)
 
 			if c.Bool("json") {
 				return json.NewEncoder(os.Stdout).Encode(report)

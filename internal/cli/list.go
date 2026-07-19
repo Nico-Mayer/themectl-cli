@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Nico-Mayer/themectl/internal/config"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
@@ -21,7 +20,7 @@ var (
 	listHeaderStyle = lipgloss.NewStyle().Faint(true)
 )
 
-func listCmd(cfg config.Config, store *theme.Store) *cli.Command {
+func (a app) listCmd() *cli.Command {
 	return &cli.Command{
 		Name:    "list",
 		Aliases: []string{"ls"},
@@ -36,7 +35,7 @@ func listCmd(cfg config.Config, store *theme.Store) *cli.Command {
 				return err
 			}
 
-			all, err := store.List(appearance)
+			all, err := a.store.List(appearance)
 			if err != nil {
 				return err
 			}
@@ -52,7 +51,7 @@ func listCmd(cfg config.Config, store *theme.Store) *cli.Command {
 				return nil
 			}
 
-			curr, _ := theme.ReadCurrent(cfg.CurrentFile())
+			curr, _ := theme.ReadCurrent(a.cfg.CurrentFile())
 			fmt.Println(renderThemeList(all, strings.TrimSpace(curr)))
 
 			return nil

@@ -9,7 +9,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Nico-Mayer/themectl/internal/config"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
@@ -25,7 +24,7 @@ var (
 	darkStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("4")).Padding(0, 1)
 )
 
-func currentCmd(cfg config.Config, store *theme.Store) *cli.Command {
+func (a app) currentCmd() *cli.Command {
 	return &cli.Command{
 		Name:  "current",
 		Usage: "get the current active theme",
@@ -33,13 +32,13 @@ func currentCmd(cfg config.Config, store *theme.Store) *cli.Command {
 			jsonFlag(),
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
-			curr, err := theme.ReadCurrent(cfg.CurrentFile())
+			curr, err := theme.ReadCurrent(a.cfg.CurrentFile())
 			if err != nil {
 				return err
 			}
 
 			if c.Bool("json") {
-				return printCurrentJSON(curr, store)
+				return printCurrentJSON(curr, a.store)
 			}
 
 			if !isatty.IsTerminal(os.Stdout.Fd()) {
@@ -47,7 +46,7 @@ func currentCmd(cfg config.Config, store *theme.Store) *cli.Command {
 				return nil
 			}
 
-			resolved, err := store.Resolve(curr)
+			resolved, err := a.store.Resolve(curr)
 			if err != nil {
 				return err
 			}
