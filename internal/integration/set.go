@@ -38,7 +38,6 @@ var available = map[string]func(cfg config.Config) Integration{
 	"zed": func(cfg config.Config) Integration {
 		z := Zed{
 			SettingsPath: configFilePath(cfg, "zed", "settings.json"),
-			CurrentDir:   cfg.CurrentDir(),
 		}
 
 		usrConfigDir, err := os.UserConfigDir()

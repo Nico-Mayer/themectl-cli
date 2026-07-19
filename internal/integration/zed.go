@@ -1,19 +1,17 @@
 package integration
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
+	"strings"
 
-	"github.com/BurntSushi/toml"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 )
 
 type Zed struct {
 	SettingsPath string
-	CurrentDir   string
 	Installer    ExtensionInstaller
 }
 
@@ -25,24 +23,22 @@ type ExtensionRef struct {
 	URL string
 }
 
-type zedSidecar struct {
-	ExtensionURL string `toml:"extension_url"`
-}
-
-var zedThemeLine = regexp.MustCompile(`("theme"\s*:\s*)"[^"]*"`)
-
 func (Zed) Name() string {
 	return "zed"
 }
 
 func (z Zed) Apply(t theme.Resolved) error {
-	if t.Zed == nil || t.Zed.Theme == "" {
+	spec := t.Zed
+	if spec == nil || spec.Theme == "" {
 		return fmt.Errorf("theme %s has no zed override", t.ID())
 	}
-	themeName := t.Zed.Theme
 
-	if err := z.ensureExtension(); err != nil {
-		return err
+	if z.Installer != nil {
+		for _, url := range spec.Extensions {
+			if err := z.Installer.Ensure(ExtensionRef{URL: url}); err != nil {
+				return err
+			}
+		}
 	}
 
 	data, err := os.ReadFile(z.SettingsPath)
@@ -50,9 +46,16 @@ func (z Zed) Apply(t theme.Resolved) error {
 		return fmt.Errorf("read zed settings: %w", err)
 	}
 
-	updated, err := setZedTheme(string(data), themeName)
+	updated, err := setZedString(string(data), "theme", spec.Theme)
 	if err != nil {
 		return err
+	}
+
+	if spec.IconTheme != "" {
+		updated, err = setZedString(updated, "icon_theme", spec.IconTheme)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := os.WriteFile(z.SettingsPath, []byte(updated), 0o644); err != nil {
@@ -66,40 +69,27 @@ func (z Zed) Check() error {
 	return checkConfigDir(z.Name(), z.SettingsPath)
 }
 
-func (z Zed) ensureExtension() error {
-	if z.Installer == nil {
-		return nil
+func setZedString(config, key, value string) (string, error) {
+	quoted, _ := json.Marshal(value) // marshaling a string never fails
+
+	re := regexp.MustCompile(`("` + regexp.QuoteMeta(key) + `"\s*:\s*)"[^"]*"`)
+	if re.MatchString(config) {
+		repl := `${1}` + strings.ReplaceAll(string(quoted), "$", "$$")
+		return re.ReplaceAllString(config, repl), nil
 	}
 
-	data, err := os.ReadFile(filepath.Join(z.CurrentDir, "zed.toml"))
-	if errors.Is(err, os.ErrNotExist) {
-		return nil
+	end := strings.LastIndex(config, "}")
+	if end < 0 {
+		return "", fmt.Errorf("no object found in zed config")
 	}
-	if err != nil {
-		return fmt.Errorf("read zed sidecar: %w", err)
-	}
-	sidecar, err := parseZedSidecar(data)
-	if err != nil {
-		return err
-	}
-	if sidecar.ExtensionURL == "" {
-		return nil
+	head := strings.TrimRight(config[:end], " \t\r\n")
+	if head == "" {
+		return "", fmt.Errorf("no object found in zed config")
 	}
 
-	return z.Installer.Ensure(ExtensionRef{URL: sidecar.ExtensionURL})
-}
-
-func setZedTheme(config string, themeName string) (string, error) {
-	if !zedThemeLine.MatchString(config) {
-		return "", errors.New("no `\"theme\"` key found in zed config")
+	sep := ",\n"
+	if last := head[len(head)-1]; last == '{' || last == ',' {
+		sep = "\n"
 	}
-	return zedThemeLine.ReplaceAllString(config, `${1}"`+themeName+`"`), nil
-}
-
-func parseZedSidecar(data []byte) (zedSidecar, error) {
-	var s zedSidecar
-	if err := toml.Unmarshal(data, &s); err != nil {
-		return zedSidecar{}, fmt.Errorf("parse zed sidecar: %w", err)
-	}
-	return s, nil
+	return head + sep + "  \"" + key + "\": " + string(quoted) + "\n" + config[end:], nil
 }
