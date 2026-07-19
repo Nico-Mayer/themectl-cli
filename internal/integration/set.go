@@ -19,13 +19,25 @@ var available = map[string]func(cfg config.Config) Integration{
 		return Helix{ConfigPath: cfg.Settings.Helix.Path(defaultConfigFile("helix", "config.toml"))}
 	},
 	"nvim": func(cfg config.Config) Integration {
-		return Nvim{Cfg: cfg}
+		return SymlinkIntegration{
+			IntegrationName: "nvim",
+			SourceFile:      filepath.Join(cfg.CurrentDir(), "nvim.lua"),
+			Target:          cfg.Settings.Nvim.Path(filepath.Join(homeConfig(), "nvim", "plugin", "99_theme.lua")),
+		}
 	},
 	"eza": func(cfg config.Config) Integration {
-		return Eza{Cfg: cfg}
+		return SymlinkIntegration{
+			IntegrationName: "eza",
+			SourceFile:      filepath.Join(cfg.CurrentDir(), "eza.yml"),
+			Target:          cfg.Settings.Eza.Path(filepath.Join(homeConfig(), "eza", "theme.yml")),
+		}
 	},
 	"yazi": func(cfg config.Config) Integration {
-		return Yazi{Cfg: cfg}
+		return SymlinkIntegration{
+			IntegrationName: "yazi",
+			SourceFile:      filepath.Join(cfg.CurrentDir(), "yazi-flavor.toml"),
+			Target:          cfg.Settings.Yazi.Path(filepath.Join(homeConfig(), "yazi", "flavors", "themectl.yazi", "flavor.toml")),
+		}
 	},
 	"system-appearance": func(cfg config.Config) Integration {
 		return SystemAppearance{}
@@ -91,4 +103,9 @@ func Unknown(cfg config.Config) []string {
 		}
 	}
 	return out
+}
+
+func homeConfig() string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".config")
 }

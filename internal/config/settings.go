@@ -11,18 +11,33 @@ import (
 )
 
 type Settings struct {
-	Integrations []string     `toml:"integrations,omitempty" jsonschema:"description=Integrations to run on theme apply. Replaces the default list.,uniqueItems=true"`
-	Ghostty      FileSettings `toml:"ghostty,omitempty" jsonschema:"description=Ghostty integration settings."`
-	Helix        FileSettings `toml:"helix,omitempty" jsonschema:"description=Helix integration settings."`
-	Zed          FileSettings `toml:"zed,omitempty" jsonschema:"description=Zed integration settings."`
+	Integrations []string        `toml:"integrations,omitempty" jsonschema:"description=Integrations to run on theme apply. Replaces the default list.,uniqueItems=true"`
+	Ghostty      FileSettings    `toml:"ghostty,omitempty" jsonschema:"description=Ghostty integration settings."`
+	Helix        FileSettings    `toml:"helix,omitempty" jsonschema:"description=Helix integration settings."`
+	Zed          FileSettings    `toml:"zed,omitempty" jsonschema:"description=Zed integration settings."`
+	Nvim         SymlinkSettings `toml:"nvim,omitempty" jsonschema:"description=Neovim integration settings."`
+	Eza          SymlinkSettings `toml:"eza,omitempty" jsonschema:"description=Eza integration settings."`
+	Yazi         SymlinkSettings `toml:"yazi,omitempty" jsonschema:"description=Yazi integration settings."`
 }
 
 type FileSettings struct {
 	ConfigFile string `toml:"config_file,omitempty" jsonschema:"description=Path to the file themectl edits. Supports env vars ($VAR) and a leading ~."`
 }
 
+type SymlinkSettings struct {
+	Target string `toml:"target,omitempty" jsonschema:"description=Where the symlink is created. Supports env vars ($VAR) and a leading ~."`
+}
+
 func (f FileSettings) Path(fallback string) string {
 	p := strings.TrimSpace(f.ConfigFile)
+	if p == "" {
+		return fallback
+	}
+	return expandPath(p)
+}
+
+func (s SymlinkSettings) Path(fallback string) string {
+	p := strings.TrimSpace(s.Target)
 	if p == "" {
 		return fallback
 	}
