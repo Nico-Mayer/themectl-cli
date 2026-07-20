@@ -166,7 +166,7 @@ func (s *Store) allFamilies() ([]string, error) {
 
 	var out []string
 	for _, e := range entries {
-		if e.IsDir() {
+		if e.IsDir() && !strings.HasPrefix(e.Name(), ".") {
 			out = append(out, e.Name())
 		}
 	}

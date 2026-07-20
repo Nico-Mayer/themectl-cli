@@ -2,38 +2,36 @@ package cli
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 
-	"github.com/Nico-Mayer/themectl/internal/theme"
+	"github.com/Nico-Mayer/themectl/internal/store"
 	"github.com/urfave/cli/v3"
 )
 
 func (a app) installCmd() *cli.Command {
 	return &cli.Command{
-		Name: "install",
+		Name:      "install",
+		Usage:     "Install a theme family from a git repository",
+		ArgsUsage: "<git-url>",
 		Arguments: []cli.Argument{
-			&cli.StringArg{
-				UsageText: "<url>",
-				Name:      "url",
-			},
-			&cli.StringArg{
-				UsageText: "<name>",
-				Name:      "name",
-			},
+			&cli.StringArg{Name: "url", UsageText: "git URL of the theme repo"},
 		},
 		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:    "force",
-				Aliases: []string{"f"},
-			},
+			&cli.StringFlag{Name: "name", Usage: "family name to install as (default: repo name)"},
+			&cli.BoolFlag{Name: "force", Aliases: []string{"f"}, Usage: "replace an already installed family"},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
 			url := c.StringArg("url")
-			name := c.StringArg("name")
-			force := c.Bool("force")
-
-			_, err := theme.Install(a.cfg.ThemesDir(), url, name, force)
-
-			return err
+			if url == "" {
+				return fmt.Errorf("no git URL provided")
+			}
+			family, err := store.Install(a.cfg.ThemesDir(), url, c.String("name"), c.Bool("force"))
+			if err != nil {
+				return err
+			}
+			slog.Info("theme installed", "family", family)
+			return nil
 		},
 	}
 }
