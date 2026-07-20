@@ -4,7 +4,7 @@ project_name: themectl
 
 builds:
   - binary: themectl
-    main: .
+    main: ./cmd/themectl
     env:
       - CGO_ENABLED=0
     goos:
