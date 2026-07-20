@@ -8,11 +8,11 @@ import (
 	"os"
 	"strings"
 
+	"charm.land/lipgloss/v2"
 	"github.com/Nico-Mayer/themectl/internal/config"
 	"github.com/Nico-Mayer/themectl/internal/integration"
 	"github.com/Nico-Mayer/themectl/internal/store"
 	"github.com/Nico-Mayer/themectl/internal/ui"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/urfave/cli/v3"
 )
 

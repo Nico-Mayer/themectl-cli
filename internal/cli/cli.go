@@ -5,12 +5,12 @@ import (
 	"log/slog"
 	"os"
 
+	"charm.land/log/v2"
 	"github.com/Nico-Mayer/themectl/internal/config"
 	"github.com/Nico-Mayer/themectl/internal/integration"
 	"github.com/Nico-Mayer/themectl/internal/store"
 	"github.com/Nico-Mayer/themectl/internal/ui"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/log"
+	"github.com/charmbracelet/colorprofile"
 	urfaveCli "github.com/urfave/cli/v3"
 )
 
@@ -61,7 +61,7 @@ func New(cfg config.Config, store *store.Store, integrations []integration.Integ
 				ReportTimestamp: withTime,
 				TimeFormat:      "15:04:05",
 			})
-			handler.SetColorProfile(lipgloss.NewRenderer(os.Stderr).ColorProfile())
+			handler.SetColorProfile(colorprofile.Detect(os.Stderr, os.Environ()))
 			slog.SetDefault(slog.New(handler))
 
 			return nil, nil

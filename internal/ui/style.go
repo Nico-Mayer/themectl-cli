@@ -1,8 +1,8 @@
 package ui
 
 import (
+	"charm.land/lipgloss/v2"
 	"github.com/Nico-Mayer/themectl/internal/theme"
-	"github.com/charmbracelet/lipgloss"
 )
 
 var (

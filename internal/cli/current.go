@@ -9,11 +9,11 @@ import (
 	"slices"
 	"strings"
 
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/table"
 	"github.com/Nico-Mayer/themectl/internal/store"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 	"github.com/Nico-Mayer/themectl/internal/ui"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
 	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v3"
 )
