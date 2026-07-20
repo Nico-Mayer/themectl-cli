@@ -1,10 +1,9 @@
-package engine
+package integration
 
 import (
 	"errors"
 	"testing"
 
-	"github.com/Nico-Mayer/themectl/internal/integration"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 )
 
@@ -34,15 +33,15 @@ func (f fakeCheckedIntegration) Check() error {
 	return f.checkErr
 }
 
-func TestEngine_Apply_runsAllAndAggregatesErrors(t *testing.T) {
+func TestEngine_ApplyAll_runsAllAndAggregatesErrors(t *testing.T) {
 	var ranA, ranC bool
-	e := New([]integration.Integration{
+	integrations := []Integration{
 		fakeIntegration{name: "a", applied: &ranA},
 		fakeIntegration{name: "b", err: errors.New("boom")},
 		fakeIntegration{name: "c", applied: &ranC},
-	})
+	}
 
-	err := e.Apply(theme.Resolved{Family: "f", Variant: "v"})
+	err := ApplyAll(integrations, theme.Resolved{Family: "f", Variant: "v"})
 	if err == nil {
 		t.Fatal("want aggregated error from failing integration, got nil")
 	}
@@ -53,13 +52,13 @@ func TestEngine_Apply_runsAllAndAggregatesErrors(t *testing.T) {
 
 func TestEngine_Apply_skipsUnhealthyIntegrations(t *testing.T) {
 	var ranBroken, ranHealthy, ranUnchecked bool
-	e := New([]integration.Integration{
+	integrations := []Integration{
 		fakeCheckedIntegration{fakeIntegration{name: "broken", applied: &ranBroken}, errors.New("config dir missing")},
 		fakeCheckedIntegration{fakeIntegration{name: "healthy", applied: &ranHealthy}, nil},
 		fakeIntegration{name: "unchecked", applied: &ranUnchecked},
-	})
+	}
 
-	err := e.Apply(theme.Resolved{Family: "f", Variant: "v"})
+	err := ApplyAll(integrations, theme.Resolved{Family: "f", Variant: "v"})
 	if err != nil {
 		t.Fatalf("unhealthy integration must only warn, not fail apply: %v", err)
 	}

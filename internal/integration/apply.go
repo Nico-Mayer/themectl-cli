@@ -1,4 +1,4 @@
-package engine
+package integration
 
 import (
 	"errors"
@@ -6,27 +6,16 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/Nico-Mayer/themectl/internal/integration"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 )
 
-type Engine struct {
-	integrations []integration.Integration
-}
-
-func New(ints []integration.Integration) *Engine {
-	return &Engine{
-		integrations: ints,
-	}
-}
-
-func (e *Engine) Apply(t theme.Resolved) error {
-	warnErrors := make([]error, len(e.integrations))
-	errs := make([]error, len(e.integrations))
+func ApplyAll(integrations []Integration, t theme.Resolved) error {
+	warnErrors := make([]error, len(integrations))
+	errs := make([]error, len(integrations))
 	var wg sync.WaitGroup
-	for i, in := range e.integrations {
+	for i, in := range integrations {
 		wg.Go(func() {
-			if hc, ok := in.(integration.HealthChecker); ok {
+			if hc, ok := in.(HealthChecker); ok {
 				if err := hc.Check(); err != nil {
 					warnErrors[i] = err
 					return
@@ -43,7 +32,7 @@ func (e *Engine) Apply(t theme.Resolved) error {
 
 	for i, err := range warnErrors {
 		if err != nil {
-			slog.Warn("integration unhealthy, skipping", "integration", e.integrations[i].Name(), "err", err)
+			slog.Warn("integration unhealthy, skipping", "integration", integrations[i].Name(), "err", err)
 		}
 	}
 
