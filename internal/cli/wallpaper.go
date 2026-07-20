@@ -7,11 +7,11 @@ import (
 	"log/slog"
 	"path/filepath"
 
+	"charm.land/huh/v2"
 	"github.com/Nico-Mayer/themectl/internal/config"
 	"github.com/Nico-Mayer/themectl/internal/store"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 	"github.com/Nico-Mayer/themectl/internal/wallpaper"
-	"github.com/charmbracelet/huh"
 	"github.com/urfave/cli/v3"
 )
 

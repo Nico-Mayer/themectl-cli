@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"runtime/debug"
 
+	"charm.land/log/v2"
 	"github.com/Nico-Mayer/themectl/internal/cli"
 	"github.com/Nico-Mayer/themectl/internal/config"
 	"github.com/Nico-Mayer/themectl/internal/integration"
 	"github.com/Nico-Mayer/themectl/internal/store"
-	"github.com/charmbracelet/log"
 )
 
 func main() {

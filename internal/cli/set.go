@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"log/slog"
 
+	"charm.land/huh/v2"
 	"github.com/Nico-Mayer/themectl/internal/integration"
 	"github.com/Nico-Mayer/themectl/internal/store"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 	"github.com/Nico-Mayer/themectl/internal/ui"
-	"github.com/charmbracelet/huh"
 	"github.com/urfave/cli/v3"
 )
 
