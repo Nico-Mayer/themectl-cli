@@ -13,9 +13,9 @@ func Select(title string, options []string) (string, error) {
 	var selected string
 
 	sel := huh.NewSelect[string]().
-		Title("Pick a task").
+		Title("Pick a Theme").
 		Options(opts...).
-		Height(6).
+		Height(10).
 		Filtering(true).
 		Value(&selected)
 
