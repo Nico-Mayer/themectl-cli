@@ -24,6 +24,7 @@ type Resolved struct {
 	Ghostty          *GhosttySpec
 	Helix            *HelixSpec
 	Zed              *ZedSpec
+	VSCode           *VSCodeSpec
 }
 
 func (r *Resolved) ID() string {
@@ -40,6 +41,9 @@ func (r *Resolved) Themes() map[string]string {
 	}
 	if r.Zed != nil && r.Zed.Theme != "" {
 		out["zed"] = r.Zed.Theme
+	}
+	if r.VSCode != nil && r.VSCode.Theme != "" {
+		out["vscode"] = r.VSCode.Theme
 	}
 	return out
 }
@@ -59,6 +63,7 @@ func Resolve(fam Family, variant Variant) (Resolved, error) {
 		Ghostty:          spec.Ghostty,
 		Helix:            spec.Helix,
 		Zed:              spec.Zed,
+		VSCode:           spec.VSCode,
 	}, nil
 }
 

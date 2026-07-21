@@ -153,8 +153,8 @@ func settingsRows(r doctorReport) []kvRow {
 		configFile = ui.Muted.Render("(none - using built-in defaults)")
 	}
 	rows := []kvRow{
-		{"Config", configFile},
 		{"Root", r.Root},
+		{"Config", configFile},
 		{"Cache", r.Cache},
 	}
 	if !r.ConfigFileExists {

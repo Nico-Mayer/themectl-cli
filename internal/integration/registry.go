@@ -1,12 +1,15 @@
 package integration
 
 import (
+	"fmt"
 	"log/slog"
 	"maps"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strings"
 
 	"github.com/Nico-Mayer/themectl/internal/cache"
 	"github.com/Nico-Mayer/themectl/internal/config"
@@ -65,6 +68,27 @@ var available = map[string]func(cfg config.Config) Integration{
 		}
 		return z
 	},
+	"vscode": func(cfg config.Config) Integration {
+		v := VSCode{
+			SettingsPath: cfg.Settings.VSCode.Path(defaultVSCodeSettingsFile()),
+		}
+		if _, err := exec.LookPath("code"); err != nil {
+			slog.Warn("vscode extension install disabled, code CLI not found", "err", err)
+			return v
+		}
+
+		v.Installer = codeInstaller{
+			cache: cache.New(filepath.Join(cfg.CacheDir(), "vscode")),
+			install: func(id string) error {
+				out, err := exec.Command("code", "--install-extension", id).CombinedOutput()
+				if err != nil {
+					return fmt.Errorf("code --install-extension %s: %w (%s)", id, err, strings.TrimSpace(string(out)))
+				}
+				return nil
+			},
+		}
+		return v
+	},
 }
 
 func defaultConfigFile(app, file string) string {
@@ -79,6 +103,14 @@ func defaultZedSettingsFile() string {
 		}
 	}
 	return defaultConfigFile("zed", "settings.json")
+}
+
+func defaultVSCodeSettingsFile() string {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(dir, "Code", "User", "settings.json")
 }
 
 func Names() []string {

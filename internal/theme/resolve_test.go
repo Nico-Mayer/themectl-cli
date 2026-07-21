@@ -83,3 +83,21 @@ func TestResolve_doesNotMutateInputs(t *testing.T) {
 	testutil.Equal(t, fam.Defaults.Zed.Theme, "a")
 	testutil.Equal(t, v.Zed.IconTheme, "")
 }
+
+func TestResolve_vscode(t *testing.T) {
+	appearance := Dark
+	fam := Family{Name: "cat", Defaults: Spec{
+		Appearance: &appearance,
+		VSCode:     &VSCodeSpec{Theme: "Base", Extensions: []string{"catppuccin.catppuccin-vsc"}},
+	}}
+	v := Variant{Name: "mocha", Spec: Spec{
+		VSCode: &VSCodeSpec{Theme: "Catppuccin Mocha"},
+	}}
+
+	res, err := Resolve(fam, v)
+	testutil.NoErr(t, err)
+
+	testutil.Equal(t, res.VSCode.Theme, "Catppuccin Mocha")
+	testutil.Diff(t, []string{"catppuccin.catppuccin-vsc"}, res.VSCode.Extensions)
+	testutil.Equal(t, res.Themes()["vscode"], "Catppuccin Mocha")
+}

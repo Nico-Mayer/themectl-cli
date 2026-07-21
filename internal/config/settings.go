@@ -14,6 +14,7 @@ type Settings struct {
 	Integrations []string        `toml:"integrations,omitempty" jsonschema:"description=Integrations to run on theme apply. Replaces the default list.,uniqueItems=true"`
 	Ghostty      FileSettings    `toml:"ghostty,omitempty" jsonschema:"description=Ghostty integration settings."`
 	Helix        FileSettings    `toml:"helix,omitempty" jsonschema:"description=Helix integration settings."`
+	VSCode       FileSettings    `toml:"vscode,omitempty" jsonschema:"description=VS Code integration settings."`
 	Zed          FileSettings    `toml:"zed,omitempty" jsonschema:"description=Zed integration settings."`
 	Nvim         SymlinkSettings `toml:"nvim,omitempty" jsonschema:"description=Neovim integration settings."`
 	Eza          SymlinkSettings `toml:"eza,omitempty" jsonschema:"description=Eza integration settings."`
@@ -66,6 +67,7 @@ func defaultSettings() Settings {
 		Integrations: []string{
 			"ghostty",
 			"zed",
+			"vscode",
 			"system-appearance",
 			"wallpaper",
 			"yazi",
