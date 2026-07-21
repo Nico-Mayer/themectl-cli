@@ -2,8 +2,13 @@ package integration
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
+	"path/filepath"
+	"runtime"
 
+	"github.com/Nico-Mayer/themectl/internal/cache"
+	"github.com/Nico-Mayer/themectl/internal/config"
 	"github.com/Nico-Mayer/themectl/internal/git"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 )
@@ -64,4 +69,30 @@ func (z Zed) Apply(t theme.Resolved) error {
 
 func (z Zed) Check() error {
 	return checkConfigDir(z.Name(), z.SettingsPath)
+}
+
+func newZed(cfg config.Config) Integration {
+	z := Zed{
+		SettingsPath: cfg.Settings.Zed.Path(defaultZedSettingsFile()),
+	}
+
+	usrConfigDir, err := os.UserConfigDir()
+	if err != nil {
+		slog.Warn("zed extension install disabled, user config dir not found", "err", err)
+		return z
+	}
+	z.Installer = gitInstaller{
+		extensionsDir: filepath.Join(usrConfigDir, "Zed", "extensions", "installed"),
+		cache:         cache.New(filepath.Join(cfg.CacheDir(), "zed")),
+	}
+	return z
+}
+
+func defaultZedSettingsFile() string {
+	if runtime.GOOS == "windows" {
+		if dir, err := os.UserConfigDir(); err == nil {
+			return filepath.Join(dir, "zed", "settings.json")
+		}
+	}
+	return defaultConfigFile("zed", "settings.json")
 }

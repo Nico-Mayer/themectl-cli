@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"regexp"
 
+	"github.com/Nico-Mayer/themectl/internal/config"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 )
 
@@ -57,6 +58,10 @@ func (g Ghostty) Apply(t theme.Resolved) error {
 
 func (g Ghostty) Check() error {
 	return checkConfigDir(g.Name(), g.ConfigPath)
+}
+
+func newGhostty(cfg config.Config) Integration {
+	return Ghostty{ConfigPath: cfg.Settings.Ghostty.Path(defaultConfigFile("ghostty", "config.ghostty"))}
 }
 
 func reloadGhostty() error {

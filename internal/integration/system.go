@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"github.com/Nico-Mayer/themectl/internal/config"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 )
 
@@ -12,4 +13,8 @@ func (SystemAppearance) Name() string {
 
 func (SystemAppearance) Apply(t theme.Resolved) error {
 	return setSystemAppearance(t.Appearance)
+}
+
+func newSystemAppearance(_ config.Config) Integration {
+	return SystemAppearance{}
 }

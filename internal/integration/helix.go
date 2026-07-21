@@ -5,6 +5,7 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/Nico-Mayer/themectl/internal/config"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 )
 
@@ -50,4 +51,8 @@ func (h Helix) Apply(t theme.Resolved) error {
 
 func (h Helix) Check() error {
 	return checkConfigDir(h.Name(), h.ConfigPath)
+}
+
+func newHelix(cfg config.Config) Integration {
+	return Helix{ConfigPath: cfg.Settings.Helix.Path(defaultConfigFile("helix", "config.toml"))}
 }

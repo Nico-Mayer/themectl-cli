@@ -2,8 +2,14 @@ package integration
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
+	"github.com/Nico-Mayer/themectl/internal/cache"
+	"github.com/Nico-Mayer/themectl/internal/config"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 )
 
@@ -54,4 +60,35 @@ func (v VSCode) Apply(t theme.Resolved) error {
 
 func (v VSCode) Check() error {
 	return checkConfigDir(v.Name(), v.SettingsPath)
+}
+
+func newVSCode(cfg config.Config) Integration {
+	v := VSCode{
+		SettingsPath: cfg.Settings.VSCode.Path(defaultVSCodeSettingsFile()),
+	}
+	if _, err := exec.LookPath("code"); err != nil {
+		slog.Warn("vscode extension install disabled, code CLI not found", "err", err)
+		return v
+	}
+
+	v.Installer = codeInstaller{
+		cache: cache.New(filepath.Join(cfg.CacheDir(), "vscode")),
+		install: func(id string) error {
+			out, err := exec.Command("code", "--install-extension", id).CombinedOutput()
+			if err != nil {
+				return fmt.Errorf("code --install-extension %s: %w (%s)", id, err, strings.TrimSpace(string(out)))
+			}
+			return nil
+		},
+	}
+	return v
+}
+
+func defaultVSCodeSettingsFile() string {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		slog.Warn("cant resolve user config dir", "err", err)
+		return ""
+	}
+	return filepath.Join(dir, "Code", "User", "settings.json")
 }
