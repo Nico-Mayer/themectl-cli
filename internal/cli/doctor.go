@@ -33,7 +33,6 @@ type integrationStatus struct {
 	Enabled bool   `json:"enabled"`
 	Healthy bool   `json:"healthy"`
 	Detail  string `json:"detail,omitempty"`
-	Checked bool   `json:"checked"`
 }
 
 func (a app) doctorCmd() *cli.Command {
@@ -94,12 +93,9 @@ func integrationStatuses(cfg config.Config) []integrationStatus {
 		s := integrationStatus{Name: name, Healthy: true}
 		if i, ok := enabled[name]; ok {
 			s.Enabled = true
-			if hc, ok := i.(integration.HealthChecker); ok {
-				s.Checked = true
-				if err := hc.Check(); err != nil {
-					s.Healthy = false
-					s.Detail = err.Error()
-				}
+			if err := i.Check(); err != nil {
+				s.Healthy = false
+				s.Detail = err.Error()
 			}
 		}
 		statuses = append(statuses, s)
@@ -153,8 +149,8 @@ func settingsRows(r doctorReport) []kvRow {
 		configFile = ui.Muted.Render("(none - using built-in defaults)")
 	}
 	rows := []kvRow{
-		{"Config", configFile},
 		{"Root", r.Root},
+		{"Config", configFile},
 		{"Cache", r.Cache},
 	}
 	if !r.ConfigFileExists {

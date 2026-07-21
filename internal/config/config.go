@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 )
@@ -29,7 +29,8 @@ func Load(root string) (Config, error) {
 
 	cacheRoot, err := os.UserCacheDir()
 	if err != nil {
-		return Config{}, fmt.Errorf("resolve cache dir: %w", err)
+		slog.Warn("resolve cache dir, using temp dir as cache root", "err", err)
+		cacheRoot = os.TempDir()
 	}
 
 	return Config{Root: root, Settings: s, CacheRoot: cacheRoot}, nil

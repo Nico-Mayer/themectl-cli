@@ -64,6 +64,29 @@
           "additionalProperties": false,
           "type": "object",
           "description": "Zed integration settings."
+        },
+        "vscode": {
+          "properties": {
+            "theme": {
+              "type": "string",
+              "description": "VS Code color theme name."
+            },
+            "icon_theme": {
+              "type": "string",
+              "description": "VS Code file icon theme name. Left untouched when unset."
+            },
+            "extensions": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true,
+              "description": "VS Code marketplace extension IDs (publisher.name) to install."
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "description": "VS Code integration settings."
         }
       },
       "additionalProperties": false,
@@ -133,6 +156,29 @@
             "additionalProperties": false,
             "type": "object",
             "description": "Zed integration settings."
+          },
+          "vscode": {
+            "properties": {
+              "theme": {
+                "type": "string",
+                "description": "VS Code color theme name."
+              },
+              "icon_theme": {
+                "type": "string",
+                "description": "VS Code file icon theme name. Left untouched when unset."
+              },
+              "extensions": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "uniqueItems": true,
+                "description": "VS Code marketplace extension IDs (publisher.name) to install."
+              }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "VS Code integration settings."
           }
         },
         "additionalProperties": false,

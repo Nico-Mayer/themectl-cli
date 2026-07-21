@@ -19,25 +19,25 @@ type gitInstaller struct {
 	cache         cache.Cache
 }
 
-func (g gitInstaller) Ensure(ref ExtensionRef) error {
+func (g gitInstaller) Ensure(url string) error {
 	if err := os.MkdirAll(g.extensionsDir, 0o755); err != nil {
 		return fmt.Errorf("ensure extensions dir: %w", err)
 	}
 
-	if g.cache.Fresh(ref.URL, installCheckTTL) {
-		slog.Debug("zed extension recently checked, skipping", "url", ref.URL)
+	if g.cache.Fresh(url, installCheckTTL) {
+		slog.Debug("zed extension recently checked, skipping", "url", url)
 		return nil
 	}
 
-	slog.Debug("checking zed extension for updates", "url", ref.URL)
-	head, err := git.RemoteHead(ref.URL)
+	slog.Debug("checking zed extension for updates", "url", url)
+	head, err := git.RemoteHead(url)
 	if err != nil {
 		return err
 	}
 
-	if prev, ok := g.cache.Get(ref.URL); ok && prev == head {
-		slog.Debug("zed extension up to date", "url", ref.URL)
-		return g.cache.Touch(ref.URL)
+	if prev, ok := g.cache.Get(url); ok && prev == head {
+		slog.Debug("zed extension up to date", "url", url)
+		return g.cache.Touch(url)
 	}
 
 	tmp, err := os.MkdirTemp(g.extensionsDir, ".zed-ext-*")
@@ -46,7 +46,7 @@ func (g gitInstaller) Ensure(ref ExtensionRef) error {
 	}
 	defer os.RemoveAll(tmp)
 
-	if err := git.SparseClone(ref.URL, tmp, "themes", "icon_themes", "icons"); err != nil {
+	if err := git.SparseClone(url, tmp, "themes", "icon_themes", "icons"); err != nil {
 		return err
 	}
 
@@ -62,9 +62,9 @@ func (g gitInstaller) Ensure(ref ExtensionRef) error {
 	if err := os.Rename(tmp, target); err != nil {
 		return fmt.Errorf("install extension %q: %w", id, err)
 	}
-	slog.Info("zed extension installed", "extension", id, "url", ref.URL)
+	slog.Info("zed extension installed", "extension", id, "url", url)
 
-	return g.cache.Put(ref.URL, head)
+	return g.cache.Put(url, head)
 }
 
 func extensionID(path string) (string, error) {

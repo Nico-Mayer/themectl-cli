@@ -1,12 +1,14 @@
 package integration
 
 import (
-	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
-	"regexp"
-	"strings"
+	"path/filepath"
+	"runtime"
 
+	"github.com/Nico-Mayer/themectl/internal/cache"
+	"github.com/Nico-Mayer/themectl/internal/config"
 	"github.com/Nico-Mayer/themectl/internal/git"
 	"github.com/Nico-Mayer/themectl/internal/theme"
 )
@@ -17,11 +19,7 @@ type Zed struct {
 }
 
 type ExtensionInstaller interface {
-	Ensure(ref ExtensionRef) error
-}
-
-type ExtensionRef struct {
-	URL string
+	Ensure(string) error
 }
 
 func (Zed) Name() string {
@@ -37,7 +35,7 @@ func (z Zed) Apply(t theme.Resolved) error {
 	if z.Installer != nil {
 		for _, url := range spec.Extensions {
 			url = git.NormalizeURL(url)
-			if err := z.Installer.Ensure(ExtensionRef{URL: url}); err != nil {
+			if err := z.Installer.Ensure(url); err != nil {
 				return err
 			}
 		}
@@ -48,7 +46,7 @@ func (z Zed) Apply(t theme.Resolved) error {
 		return fmt.Errorf("read zed settings: %w", err)
 	}
 
-	updated, err := setZedString(string(data), "theme", spec.Theme)
+	updated, err := setJSONCString(string(data), "theme", spec.Theme)
 	if err != nil {
 		return err
 	}
@@ -57,7 +55,7 @@ func (z Zed) Apply(t theme.Resolved) error {
 		spec.IconTheme = "Zed (Default)"
 	}
 
-	updated, err = setZedString(updated, "icon_theme", spec.IconTheme)
+	updated, err = setJSONCString(updated, "icon_theme", spec.IconTheme)
 	if err != nil {
 		return err
 	}
@@ -73,27 +71,28 @@ func (z Zed) Check() error {
 	return checkConfigDir(z.Name(), z.SettingsPath)
 }
 
-func setZedString(config, key, value string) (string, error) {
-	quoted, _ := json.Marshal(value) // marshaling a string never fails
-
-	re := regexp.MustCompile(`("` + regexp.QuoteMeta(key) + `"\s*:\s*)"[^"]*"`)
-	if re.MatchString(config) {
-		repl := `${1}` + strings.ReplaceAll(string(quoted), "$", "$$")
-		return re.ReplaceAllString(config, repl), nil
+func newZed(cfg config.Config) Integration {
+	z := Zed{
+		SettingsPath: cfg.Settings.Zed.Path(defaultZedSettingsFile()),
 	}
 
-	end := strings.LastIndex(config, "}")
-	if end < 0 {
-		return "", fmt.Errorf("no object found in zed config")
+	usrConfigDir, err := os.UserConfigDir()
+	if err != nil {
+		slog.Warn("zed extension install disabled, user config dir not found", "err", err)
+		return z
 	}
-	head := strings.TrimRight(config[:end], " \t\r\n")
-	if head == "" {
-		return "", fmt.Errorf("no object found in zed config")
+	z.Installer = gitInstaller{
+		extensionsDir: filepath.Join(usrConfigDir, "Zed", "extensions", "installed"),
+		cache:         cache.New(filepath.Join(cfg.CacheDir(), "zed")),
 	}
+	return z
+}
 
-	sep := ",\n"
-	if last := head[len(head)-1]; last == '{' || last == ',' {
-		sep = "\n"
+func defaultZedSettingsFile() string {
+	if runtime.GOOS == "windows" {
+		if dir, err := os.UserConfigDir(); err == nil {
+			return filepath.Join(dir, "zed", "settings.json")
+		}
 	}
-	return head + sep + "  \"" + key + "\": " + string(quoted) + "\n" + config[end:], nil
+	return defaultConfigFile("zed", "settings.json")
 }
