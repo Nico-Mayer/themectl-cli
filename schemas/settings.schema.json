@@ -11,6 +11,7 @@
           "helix",
           "nvim",
           "system-appearance",
+          "vscode",
           "wallpaper",
           "yazi",
           "zed"
@@ -41,6 +42,17 @@
       "additionalProperties": false,
       "type": "object",
       "description": "Helix integration settings."
+    },
+    "vscode": {
+      "properties": {
+        "config_file": {
+          "type": "string",
+          "description": "Path to the file themectl edits. Supports env vars ($VAR) and a leading ~."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "description": "VS Code integration settings."
     },
     "zed": {
       "properties": {
