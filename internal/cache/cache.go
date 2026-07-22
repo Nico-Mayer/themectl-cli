@@ -16,20 +16,20 @@ func New(dir string) Cache {
 	return Cache{dir: dir}
 }
 
-func (c Cache) Put(key, data string) error {
+func (c Cache) Put(key string, data []byte) error {
 	if err := os.MkdirAll(c.dir, 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(c.path(key), []byte(data), 0o644)
+	return os.WriteFile(c.path(key), data, 0o644)
 }
 
-func (c Cache) Get(key string) (string, bool) {
+func (c Cache) Get(key string) ([]byte, bool) {
 	data, err := os.ReadFile(c.path(key))
 	if err != nil {
-		return "", false
+		return nil, false
 	}
 
-	return string(data), true
+	return data, true
 }
 
 func (c Cache) Fresh(key string, ttl time.Duration) bool {

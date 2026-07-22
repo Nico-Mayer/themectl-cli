@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,10 +14,10 @@ func TestPutGet(t *testing.T) {
 	c := New(filepath.Join(t.TempDir(), "sub"))
 
 	key := "https://github.com/x/y"
-	testutil.NoErr(t, c.Put(key, "abc123"))
+	testutil.NoErr(t, c.Put(key, []byte{'a', 'b', 'c', '1', '2', '3'}))
 
 	got, ok := c.Get(key)
-	testutil.Equal(t, got, "abc123")
+	testutil.Equal(t, bytes.Equal(got, []byte{'a', 'b', 'c', '1', '2', '3'}), true)
 	testutil.Equal(t, ok, true)
 }
 
@@ -27,7 +28,7 @@ func TestFresh(t *testing.T) {
 	key := "k"
 
 	testutil.Equal(t, c.Fresh(key, time.Hour), false)
-	testutil.NoErr(t, c.Put(key, "v"))
+	testutil.NoErr(t, c.Put(key, []byte([]byte("v"))))
 	testutil.Equal(t, c.Fresh(key, time.Hour), true)
 	backdate(t, dir, 2*time.Hour)
 	testutil.Equal(t, c.Fresh(key, time.Hour), false)
@@ -36,24 +37,36 @@ func TestFresh(t *testing.T) {
 func TestTouch(t *testing.T) {
 	dir := t.TempDir()
 	c := New(dir)
-	testutil.NoErr(t, c.Put("k", "v"))
+	testutil.NoErr(t, c.Put("k", []byte("v")))
 	backdate(t, dir, 2*time.Hour)
 
 	testutil.NoErr(t, c.Touch("k"))
 	testutil.Equal(t, c.Fresh("k", time.Hour), true)
 	got, _ := c.Get("k")
-	testutil.Equal(t, got, "v")
+	testutil.Equal(t, bytes.Equal([]byte("v"), got), true)
 }
 
 func TestClear(t *testing.T) {
 	dir := t.TempDir()
 	c := New(dir)
-	testutil.NoErr(t, c.Put("k", "v"))
+	testutil.NoErr(t, c.Put("k", []byte("v")))
 	testutil.NoErr(t, c.Clear())
 
 	got, ok := c.Get("k")
-	testutil.Equal(t, got, "")
+	testutil.Equal(t, bytes.Equal([]byte(""), got), true)
 	testutil.Equal(t, ok, false)
+}
+
+func TestImutable(t *testing.T) {
+	dir := t.TempDir()
+	c := New(dir)
+	testutil.NoErr(t, c.Put("k", []byte{'1', '2', '3'}))
+
+	temp, _ := c.Get("k")
+	temp[0] = 2
+
+	got, _ := c.Get("k")
+	testutil.Equal(t, bytes.Equal(got, []byte{'1', '2', '3'}), true)
 }
 
 func backdate(t *testing.T, dir string, age time.Duration) {

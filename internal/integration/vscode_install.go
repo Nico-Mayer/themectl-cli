@@ -23,5 +23,5 @@ func (c codeInstaller) Ensure(id string) error {
 	}
 	slog.Info("vscode extension ensured", "id", id)
 
-	return c.cache.Put(id, "installed")
+	return c.cache.Put(id, []byte("installed"))
 }

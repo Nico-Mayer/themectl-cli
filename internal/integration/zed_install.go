@@ -35,7 +35,7 @@ func (g gitInstaller) Ensure(url string) error {
 		return err
 	}
 
-	if prev, ok := g.cache.Get(url); ok && prev == head {
+	if prev, ok := g.cache.Get(url); ok && string(prev) == head {
 		slog.Debug("zed extension up to date", "url", url)
 		return g.cache.Touch(url)
 	}
@@ -64,7 +64,7 @@ func (g gitInstaller) Ensure(url string) error {
 	}
 	slog.Info("zed extension installed", "extension", id, "url", url)
 
-	return g.cache.Put(url, head)
+	return g.cache.Put(url, []byte(head))
 }
 
 func extensionID(path string) (string, error) {
