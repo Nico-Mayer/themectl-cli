@@ -31,11 +31,12 @@ func NewManager(themesDir, sharedWallpapersDir string) Manager {
 }
 
 func (m Manager) ApplyRandom(t theme.Resolved) error {
-	sources := m.collectSourceDirs(t)
-	candidates := collectCandidates(sources)
+	return m.SetRandomFrom(m.ListCandidates(t))
+}
 
+func (m Manager) SetRandomFrom(candidates []string) error {
 	if len(candidates) == 0 {
-		slog.Debug("no wallpaper candidates found", "theme", t.ID(), "sources", sources)
+		slog.Debug("no wallpaper candidates found")
 		return nil
 	}
 

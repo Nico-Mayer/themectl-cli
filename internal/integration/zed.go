@@ -26,11 +26,12 @@ func (Zed) Name() string {
 	return "zed"
 }
 
+func (Zed) Supports(t theme.Resolved) bool {
+	return t.Zed != nil && t.Zed.Theme != ""
+}
+
 func (z Zed) Apply(t theme.Resolved) error {
 	spec := t.Zed
-	if spec == nil || spec.Theme == "" {
-		return fmt.Errorf("no zed override in theme %s: %w", t.ID(), ErrUnsupported)
-	}
 
 	if z.Installer != nil {
 		for _, url := range spec.Extensions {

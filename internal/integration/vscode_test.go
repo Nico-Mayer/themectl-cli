@@ -50,10 +50,13 @@ func TestVSCode_Apply(t *testing.T) {
 	testutil.Diff(t, []string{"catppuccin.catppuccin-vsc", "catppuccin.catppuccin-vsc-icons"}, installer.ids)
 }
 
-func TestVSCode_Apply_noOverrideFails(t *testing.T) {
+func TestVSCode_Supports_requiresOverride(t *testing.T) {
 	v := VSCode{SettingsPath: "unused"}
-	if err := v.Apply(theme.Resolved{}); err == nil {
-		t.Error("expected error when theme has no vscode override")
+	if v.Supports(theme.Resolved{}) {
+		t.Error("theme without vscode override must not be supported")
+	}
+	if !v.Supports(theme.Resolved{VSCode: &theme.VSCodeSpec{Theme: "X"}}) {
+		t.Error("theme with vscode override must be supported")
 	}
 }
 

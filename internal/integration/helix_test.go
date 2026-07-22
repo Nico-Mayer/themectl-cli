@@ -58,9 +58,12 @@ func TestHelix_Apply(t *testing.T) {
 	}
 }
 
-func TestHelix_Apply_noOverrideFails(t *testing.T) {
+func TestHelix_Supports_requiresOverride(t *testing.T) {
 	h := Helix{ConfigPath: "unused"}
-	if err := h.Apply(theme.Resolved{}); err == nil {
-		t.Error("expected error when theme has no helix override")
+	if h.Supports(theme.Resolved{}) {
+		t.Error("theme without helix override must not be supported")
+	}
+	if !h.Supports(theme.Resolved{Helix: &theme.HelixSpec{Theme: "X"}}) {
+		t.Error("theme with helix override must be supported")
 	}
 }

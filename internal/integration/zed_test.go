@@ -112,10 +112,13 @@ func TestZed_Apply_addsMissingIconThemeKey(t *testing.T) {
 	}
 }
 
-func TestZed_Apply_noOverrideFails(t *testing.T) {
+func TestZed_Supports_requiresOverride(t *testing.T) {
 	z := Zed{SettingsPath: "unused"}
-	if err := z.Apply(theme.Resolved{}); err == nil {
-		t.Error("expected error when theme has no zed override")
+	if z.Supports(theme.Resolved{}) {
+		t.Error("theme without zed override must not be supported")
+	}
+	if !z.Supports(theme.Resolved{Zed: &theme.ZedSpec{Theme: "X"}}) {
+		t.Error("theme with zed override must be supported")
 	}
 }
 

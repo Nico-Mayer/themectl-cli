@@ -15,6 +15,10 @@ func (SystemAppearance) Check() error {
 	return checkSystemAppearance()
 }
 
+func (SystemAppearance) Supports(theme.Resolved) bool {
+	return true
+}
+
 func (SystemAppearance) Apply(t theme.Resolved) error {
 	return setSystemAppearance(t.Appearance)
 }

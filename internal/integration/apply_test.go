@@ -8,10 +8,11 @@ import (
 )
 
 type fakeIntegration struct {
-	name     string
-	err      error
-	checkErr error
-	applied  *bool
+	name        string
+	err         error
+	checkErr    error
+	unsupported bool
+	applied     *bool
 }
 
 func (f fakeIntegration) Name() string {
@@ -20,6 +21,10 @@ func (f fakeIntegration) Name() string {
 
 func (f fakeIntegration) Check() error {
 	return f.checkErr
+}
+
+func (f fakeIntegration) Supports(theme.Resolved) bool {
+	return !f.unsupported
 }
 
 func (f fakeIntegration) Apply(t theme.Resolved) error {
@@ -43,6 +48,25 @@ func TestEngine_ApplyAll_runsAllAndAggregatesErrors(t *testing.T) {
 	}
 	if !ranA || !ranC {
 		t.Errorf("a failing integration must not stop the others (a=%v c=%v)", ranA, ranC)
+	}
+}
+
+func TestEngine_Apply_skipsUnsupportedIntegrations(t *testing.T) {
+	var ranUnsupported, ranSupported bool
+	integrations := []Integration{
+		fakeIntegration{name: "unsupported", applied: &ranUnsupported, unsupported: true},
+		fakeIntegration{name: "supported", applied: &ranSupported},
+	}
+
+	err := ApplyAll(integrations, theme.Resolved{Family: "f", Variant: "v"})
+	if err != nil {
+		t.Fatalf("unsupported integration must be skipped silently, not fail apply: %v", err)
+	}
+	if ranUnsupported {
+		t.Error("unsupported integration must not be applied")
+	}
+	if !ranSupported {
+		t.Error("supported integration must still run")
 	}
 }
 

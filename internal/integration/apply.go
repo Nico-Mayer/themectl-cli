@@ -15,16 +15,16 @@ func ApplyAll(integrations []Integration, t theme.Resolved) error {
 	var wg sync.WaitGroup
 	for i, in := range integrations {
 		wg.Go(func() {
+			if !in.Supports(t) {
+				slog.Info("integration skipped, theme does not support it", "integration", in.Name())
+				return
+			}
 			if err := in.Check(); err != nil {
 				warnErrors[i] = err
 				return
 			}
 			slog.Debug("applying integration", "integration", in.Name())
 			if err := in.Apply(t); err != nil {
-				if errors.Is(err, ErrUnsupported) {
-					slog.Info("integration skipped, theme has no override", "integration", in.Name())
-					return
-				}
 				slog.Warn("integration failed", "integration", in.Name(), "err", err)
 				errs[i] = fmt.Errorf("%s: %w", in.Name(), err)
 			}

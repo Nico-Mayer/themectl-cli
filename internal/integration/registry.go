@@ -17,6 +17,7 @@ var available = map[string]func(cfg config.Config) Integration{
 			IntegrationName: "nvim",
 			SourceFile:      filepath.Join(cfg.CurrentDir(), "nvim.lua"),
 			Target:          cfg.Settings.Nvim.Path(filepath.Join(homeConfig(), "nvim", "plugin", "99_theme.lua")),
+			AppConfigDir:    cfg.Settings.Nvim.Dir(filepath.Join(homeConfig(), "nvim")),
 		}
 	},
 	"eza": func(cfg config.Config) Integration {
@@ -24,6 +25,7 @@ var available = map[string]func(cfg config.Config) Integration{
 			IntegrationName: "eza",
 			SourceFile:      filepath.Join(cfg.CurrentDir(), "eza.yml"),
 			Target:          cfg.Settings.Eza.Path(filepath.Join(homeConfig(), "eza", "theme.yml")),
+			AppConfigDir:    cfg.Settings.Eza.Dir(filepath.Join(homeConfig(), "eza")),
 		}
 	},
 	"yazi": func(cfg config.Config) Integration {
@@ -31,6 +33,7 @@ var available = map[string]func(cfg config.Config) Integration{
 			IntegrationName: "yazi",
 			SourceFile:      filepath.Join(cfg.CurrentDir(), "yazi-flavor.toml"),
 			Target:          cfg.Settings.Yazi.Path(filepath.Join(homeConfig(), "yazi", "flavors", "themectl.yazi", "flavor.toml")),
+			AppConfigDir:    cfg.Settings.Yazi.Dir(filepath.Join(homeConfig(), "yazi")),
 		}
 	},
 	"system-appearance": newSystemAppearance,

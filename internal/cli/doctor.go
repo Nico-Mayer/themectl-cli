@@ -12,6 +12,7 @@ import (
 	"github.com/Nico-Mayer/themectl/internal/config"
 	"github.com/Nico-Mayer/themectl/internal/integration"
 	"github.com/Nico-Mayer/themectl/internal/store"
+	"github.com/Nico-Mayer/themectl/internal/theme"
 	"github.com/Nico-Mayer/themectl/internal/ui"
 	"github.com/urfave/cli/v3"
 )
@@ -29,10 +30,11 @@ type doctorReport struct {
 }
 
 type integrationStatus struct {
-	Name    string `json:"name"`
-	Enabled bool   `json:"enabled"`
-	Healthy bool   `json:"healthy"`
-	Detail  string `json:"detail,omitempty"`
+	Name      string `json:"name"`
+	Enabled   bool   `json:"enabled"`
+	Healthy   bool   `json:"healthy"`
+	Detail    string `json:"detail,omitempty"`
+	Supported *bool  `json:"supported_by_current_theme,omitempty"`
 }
 
 func (a app) doctorCmd() *cli.Command {
@@ -55,11 +57,10 @@ func (a app) doctorCmd() *cli.Command {
 
 func buildDoctorReport(cfg config.Config, st *store.Store) doctorReport {
 	r := doctorReport{
-		ConfigFile:   cfg.SettingsFile(),
-		Root:         cfg.Root,
-		Cache:        cfg.CacheDir(),
-		Integrations: integrationStatuses(cfg),
-		Unknown:      integration.Unknown(cfg),
+		ConfigFile: cfg.SettingsFile(),
+		Root:       cfg.Root,
+		Cache:      cfg.CacheDir(),
+		Unknown:    integration.Unknown(cfg),
 	}
 
 	curr, err := store.ReadCurrent(cfg.CurrentFile())
@@ -70,18 +71,26 @@ func buildDoctorReport(cfg config.Config, st *store.Store) doctorReport {
 		r.CurrentTheme = "unreadable: " + err.Error()
 	}
 
+	var current *theme.Resolved
+	if r.CurrentTheme != "" {
+		if res, err := st.Resolve(r.CurrentTheme); err == nil {
+			current = &res
+		}
+	}
+	r.CurrentThemeFound = current != nil
+	r.Integrations = integrationStatuses(cfg, current)
+
 	_, err = os.Stat(cfg.SettingsFile())
 	r.ConfigFileExists = err == nil
 
 	if ids, err := st.IDs(); err == nil {
 		r.InstalledThemes = len(ids)
 	}
-	r.CurrentThemeFound = themeFound(st, r.CurrentTheme)
 
 	return r
 }
 
-func integrationStatuses(cfg config.Config) []integrationStatus {
+func integrationStatuses(cfg config.Config, current *theme.Resolved) []integrationStatus {
 	enabled := make(map[string]integration.Integration)
 	for _, i := range integration.Enabled(cfg) {
 		enabled[i.Name()] = i
@@ -97,18 +106,14 @@ func integrationStatuses(cfg config.Config) []integrationStatus {
 				s.Healthy = false
 				s.Detail = err.Error()
 			}
+			if current != nil {
+				supported := i.Supports(*current)
+				s.Supported = &supported
+			}
 		}
 		statuses = append(statuses, s)
 	}
 	return statuses
-}
-
-func themeFound(store *store.Store, id string) bool {
-	if id == "" {
-		return false
-	}
-	_, err := store.Resolve(id)
-	return err == nil
 }
 
 type kvRow struct {
@@ -197,6 +202,8 @@ func renderIntegrations(r doctorReport) string {
 			lines = append(lines, integrationLine(ui.Muted, "○", s.Name, "available", width))
 		case !s.Healthy:
 			lines = append(lines, integrationLine(ui.Warning, "!", s.Name, s.Detail, width))
+		case s.Supported != nil && !*s.Supported:
+			lines = append(lines, integrationLine(ui.Muted, "●", s.Name, "enabled - unused by current theme", width))
 		default:
 			lines = append(lines, integrationLine(ui.Success, "●", s.Name, "enabled", width))
 		}

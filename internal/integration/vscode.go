@@ -20,11 +20,12 @@ type VSCode struct {
 
 func (v VSCode) Name() string { return "vscode" }
 
+func (VSCode) Supports(t theme.Resolved) bool {
+	return t.VSCode != nil && t.VSCode.Theme != ""
+}
+
 func (v VSCode) Apply(t theme.Resolved) error {
 	spec := t.VSCode
-	if spec == nil || spec.Theme == "" {
-		return fmt.Errorf("no vscode override in theme %s: %w", t.ID(), ErrUnsupported)
-	}
 
 	if v.Installer != nil {
 		for _, url := range spec.Extensions {

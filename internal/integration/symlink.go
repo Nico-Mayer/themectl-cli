@@ -13,26 +13,25 @@ type SymlinkIntegration struct {
 	IntegrationName string
 	SourceFile      string
 	Target          string
+	AppConfigDir    string
 }
 
 func (s SymlinkIntegration) Name() string { return s.IntegrationName }
+
+func (s SymlinkIntegration) Supports(theme.Resolved) bool {
+	_, err := os.Stat(s.SourceFile)
+	return err == nil
+}
 
 func (s SymlinkIntegration) Apply(theme.Resolved) error {
 	return symlink(s.SourceFile, s.Target)
 }
 
 func (s SymlinkIntegration) Check() error {
-	return checkFileExists(s.IntegrationName+" theme asset", s.SourceFile)
+	return checkFileExists(s.IntegrationName+" config dir", s.AppConfigDir)
 }
 
 func symlink(source, target string) error {
-	if _, err := os.Stat(source); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("source file does not exist %q", source)
-		}
-		return err
-	}
-
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return fmt.Errorf("creating parent folders %q: %w", target, err)
 	}

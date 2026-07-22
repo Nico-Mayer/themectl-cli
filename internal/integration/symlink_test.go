@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Nico-Mayer/themectl/internal/testutil"
+	"github.com/Nico-Mayer/themectl/internal/theme"
 )
 
 func TestSymlink_createsLink(t *testing.T) {
@@ -55,11 +56,31 @@ func TestSymlink_refusesToOverwriteRealFile(t *testing.T) {
 	}
 }
 
-func TestSymlink_missingSourceFails(t *testing.T) {
+func TestSymlinkIntegration_supportsRequiresSourceFile(t *testing.T) {
 	tmp := t.TempDir()
-
-	err := symlink(filepath.Join(tmp, "source"), filepath.Join(tmp, "link"))
-	if err == nil {
-		t.Error("expected error when source does not exist")
+	s := SymlinkIntegration{
+		IntegrationName: "nvim",
+		SourceFile:      filepath.Join(tmp, "nvim.lua"),
 	}
+
+	if s.Supports(theme.Resolved{}) {
+		t.Error("theme without asset file must not be supported")
+	}
+
+	testutil.NoErr(t, os.WriteFile(s.SourceFile, []byte("theme"), 0o644))
+	if !s.Supports(theme.Resolved{}) {
+		t.Error("theme with asset file must be supported")
+	}
+}
+
+func TestSymlinkIntegration_checkProbesAppConfigDir(t *testing.T) {
+	tmp := t.TempDir()
+	s := SymlinkIntegration{IntegrationName: "nvim", AppConfigDir: filepath.Join(tmp, "nvim")}
+
+	if err := s.Check(); err == nil {
+		t.Error("expected error when app config dir is missing")
+	}
+
+	testutil.NoErr(t, os.MkdirAll(s.AppConfigDir, 0o755))
+	testutil.NoErr(t, s.Check())
 }
